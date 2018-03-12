@@ -2,6 +2,17 @@
 
 A library of re-usable bash scripts
 
+## Overview
+
+Bash Library features:
+
+* implements an HTTP conditional request (RFC 7232) client
+* monitors an HTTP resource that supports HTTP Compression
+* monitors an HTTP resource for responsiveness
+* includes a compatibility layer (Linux and Mac OS)
+* has a built-in logging facility
+* is cron-friendly
+
 ## Installation
 
 Download the source, change directory to the source directory, and install the source into `/tmp` as follows:
@@ -80,17 +91,6 @@ Various log levels are supported:
 The default log level is INFO (i.e., if you do not explicitly set the optional `LOG_LEVEL` environment variable, the value `LOG_LEVEL=3` is assumed by default).
 
 Note: Some of the scripts have command-line options that set the log level on-the-fly. See the script help file for details.
-
-## Overview
-
-Bash Library features:
-
-* implements an HTTP conditional request (RFC 7232) client
-* monitors an HTTP resource that supports HTTP Compression
-* monitors an HTTP resource for responsiveness
-* includes a compatibility layer (Linux and Mac OS)
-* has a built-in logging facility
-* is cron-friendly
 
 ## Compatibility
 
