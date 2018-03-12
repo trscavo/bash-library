@@ -6,7 +6,7 @@ A library of re-usable bash scripts
 
 Bash Library features:
 
-* implements an HTTP conditional request (RFC 7232) client
+* implements an HTTP conditional request ([RFC 7232](https://tools.ietf.org/html/rfc7232)) client
 * monitors an HTTP resource that supports HTTP Compression
 * monitors an HTTP resource for responsiveness
 * includes a compatibility layer (Linux and Mac OS)
