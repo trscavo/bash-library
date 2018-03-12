@@ -20,7 +20,7 @@ $ export LIB_DIR=$HOME/dev/lib
 $ ./install.sh $BIN_DIR $LIB_DIR
 ```
 
-A given target directory will be created if one doesn't already exist. Confirm that the files were installed:
+A given target directory will be created if one doesn't already exist. The following commands confirm that the files were installed:
 
 ```Shell
 $ ls -1 $BIN_DIR | head -n 5
@@ -31,11 +31,11 @@ http_cache_diff.bash
 http_cache_file.bash
 
 $ ls -1 $LIB_DIR | head -n 5
-add_validUntil_attribute.xsl
 compatible_date.bash
 config_tools.bash
 core_lib.bash
-entity_endpoints_txt.xsl
+http_cache_tools.bash
+http_log_tools.bash
 ```
 
 ## Environment
@@ -55,22 +55,16 @@ All but `LOG_LEVEL` are REQUIRED. See the following section for more info about 
 
 Note: Some OSes define `TMPDIR` and some do not. In any case, a temporary directory by that name is required to use these scripts.
 
+Assuming your OS defines `TMPDIR`, the following environment variables will suffice:
+
 ```Shell
-export BIN_DIR="/path/to/bin/dir"
-export LIB_DIR="/path/to/lib/dir"
-export CACHE_DIR="/path/to/cache/dir"
-export TMPDIR="/path/to/tmp/dir"   # may or may not be necessary
-export LOG_FILE="/path/to/log/file"
+export BIN_DIR=/tmp/bin
+export LIB_DIR=/tmp/lib
+export CACHE_DIR=/tmp/http_cache
+export LOG_FILE=/tmp/bash_log.txt
 ```
 
 ## Logging
-
-For convenience, we will log directly to the terminal in the examples below:
-
-```Shell
-$ export LOG_FILE=/dev/tty
-$ export LOG_LEVEL=3
-```
 
 Various log levels are supported:
 
@@ -89,11 +83,18 @@ Note: Some of the scripts have command-line options that set the log level on-th
 
 ## Overview
 
-TBD
+Bash Library features:
+
+* implements an HTTP conditional request (RFC 7232) client
+* monitors an HTTP resource that supports HTTP Compression
+* monitors an HTTP resource for responsiveness
+* includes a compatibility layer (Linux and Mac OS)
+* has a built-in logging facility
+* is cron-friendly
 
 ## Compatibility
 
-The shell scripts are compatible with both GNU/Linux and Mac OS. The XSLT scripts are written in XSLT 1.0.
+The shell scripts are compatible with both GNU/Linux and Mac OS.
 
 ## Dependencies
 
