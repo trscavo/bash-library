@@ -35,11 +35,13 @@ display_help () {
 	
 	If the resource is cached and up-to-date, the script exits 
 	normally with exit code 0. If the server responds with 200 
-	(instead of 304), the script logs a warning and exits with code 1,
-	indicating that the cache is dirty and in need of update. If any 
-	other HTTP response is received, the script logs an error and exits
-	some code greater than 1. In any case, no output is produced and, 
-	moreover, no cache write occurs.
+	(instead of 304), the script logs a warning and exits with 
+	code 1, indicating that the cache is dirty and in need of 
+	update. If any other HTTP response is received, the script 
+	logs an error and exits with code greater than 1.
+	
+	Regardless of the exit status, this script produces no output 
+	and, moreover, no cache write occurs.
 	
 	Options:
 	   -h      Display this help message
@@ -87,20 +89,20 @@ display_help () {
 	
 	For some HTTP location:
 	
-	  \$ cget.bash \$url      # prime the cache
+	  \$ cget.bash \$url              # prime the cache
 	  \$ ${0##*/} \$url
-	  \$ echo \$?             # the cache is up-to-date
-	  0
+	  \$ echo \$?
+	  0                             # the cache is up-to-date
 	
 	When the resource on the server changes:
 	
 	  \$ ${0##*/} \$url
-	  \$ echo \$?             # the cache is NOT up-to-date
-	  1
-	  \$ cget.bash \$url      # update the cache
+	  \$ echo \$?
+	  1                             # the cache is NOT up-to-date
+	  \$ cget.bash \$url              # update the cache
 	  \$ ${0##*/} \$url
-	  \$ echo \$?             # the cache is up-to-date
-	  0
+	  \$ echo \$?
+	  0                             # the cache is up-to-date
 HELP_MSG
 }
 

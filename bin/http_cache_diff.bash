@@ -30,15 +30,16 @@ display_help () {
 	
 	$usage_string
 	
-	This script takes one command-line argument. The URL argument 
-	is the absolute URL of an HTTP resource. If the resource is not 
-	cached, the script does nothing and returns a nonzero error code.
+	This script takes one command-line argument. The HTTP_LOCATION 
+	argument is the absolute URL of an HTTP resource. If the resource 
+	is not cached, the script does nothing and returns a nonzero 
+	error code.
 	
 	The script fetches the resource at the given URL using HTTP 
 	Conditional GET [RFC 7232]. If the server responds with 200, the 
 	document in the response body is compared to the cached document
-	using diff. In that case, the script returns the whatever exit 
-	code diff returns.
+	using diff. In that case, the script returns whatever exit code 
+	diff returns.
 	
 	If the server responds with 304, the script short-circuits with
 	exit code zero (since the two documents are the same).
@@ -164,7 +165,7 @@ done
 # Process command-line options and arguments
 #######################################################################
 
-usage_string="Usage: $script_name [-hDWzb] [-c|-e|-f|-u] URL"
+usage_string="Usage: $script_name [-hDWzb] [-c|-e|-f|-u] HTTP_LOCATION"
 
 # defaults
 help_mode=false
