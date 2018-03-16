@@ -38,13 +38,13 @@ get_response_code () {
 
 	# check the number of arguments
 	if [ $# -ne 1 ]; then
-		echo "ERROR: incorrect number of arguments: $# (1 required)" >&2
+		print_log_message -E "$FUNCNAME: incorrect number of arguments: $# (1 required)"
 		return 2
 	fi
 	
 	# make sure the file exists
 	if [ ! -f "$1" ]; then
-		echo "ERROR: file does not exist: $1" >&2
+		print_log_message -E "$FUNCNAME: file does not exist: $1"
 		return 2
 	fi
 	
@@ -78,13 +78,13 @@ get_header_value () {
 
 	# check the number of arguments
 	if [ $# -ne 2 ]; then
-		echo "ERROR: incorrect number of arguments: $# (2 required)" >&2
+		print_log_message -E "$FUNCNAME: incorrect number of arguments: $# (2 required)"
 		return 2
 	fi
 	
 	# make sure the file exists
 	if [ ! -f "$1" ]; then
-		echo "ERROR: file does not exist: $1" >&2
+		print_log_message -E "$FUNCNAME: file does not exist: $1"
 		return 2
 	fi
 	
