@@ -33,15 +33,16 @@ display_help () {
 	conditional request [RFC 7232]. The resource is deemed up-to-date 
 	if (and only if) the web server responds with 304 Not Modified.
 	
-	If the resource is cached and up-to-date, the script exits 
-	normally with exit code 0. If the server responds with 200 
-	(instead of 304), the script logs a warning and exits with 
-	code 1, indicating that the cache is dirty and in need of 
-	update. If any other HTTP response is received, the script 
+	If the server responds with 304, the script exits normally with 
+	exit code 0. If the server supports HTTP conditional requests 
+	and responds with 200 (instead of 304), the script logs a warning 
+	and exits with code 1, indicating that the cache is dirty and in 
+	need of update. If the server does not support HTTP conditional 
+	requests, or an unexpected HTTP response is received, the script 
 	logs an error and exits with code greater than 1.
 	
 	Regardless of the exit status, this script produces no output 
-	and, moreover, no cache write occurs.
+	and, moreover, no cache write occurs under any circumstances.
 	
 	Options:
 	   -h      Display this help message
@@ -103,6 +104,13 @@ display_help () {
 	  \$ ${0##*/} \$url
 	  \$ echo \$?
 	  0                             # the cache is up-to-date
+	
+	For some other HTTP location:
+	
+	  \$ cget.bash \$url2             # prime the cache
+	  \$ ${0##*/} \$url2
+	  \$ echo \$?
+	  4                             # HTTP conditional requests not supported
 HELP_MSG
 }
 
@@ -279,15 +287,21 @@ if [ $status_code -ne 0 ]; then
 fi
 
 # process the response code
-if [ "$response_code" = 200 ]; then
-	print_log_message -W "$script_name: cache is NOT up-to-date for resource: $location"
-	status_code=1
-elif [ "$response_code" = 304 ]; then
+if [ "$response_code" = 304 ]; then
 	print_log_message -I "$script_name: cache is up-to-date for resource: $location"
 	status_code=0
+elif [ "$response_code" = 200 ]; then
+	header_value=$( get_header_value "$tmp_header_file" ETag )
+	if [ -n "$header_value" ]; then
+		print_log_message -W "$script_name: cache is NOT up-to-date for resource: $location"
+		status_code=1
+	else
+		print_log_message -E "$script_name: HTTP conditional request not supported for resource: $location"
+		status_code=4
+	fi
 else
-	print_log_message -E "$script_name failed with HTTP response code $response_code"
-	status_code=4
+	print_log_message -E "$script_name: unexpected HTTP response ($response_code) for resource: $location"
+	status_code=5
 fi
 
 clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $status_code
