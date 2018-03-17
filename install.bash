@@ -97,9 +97,9 @@ $script_bin/bin/chead.bash
 $script_bin/bin/http_cache_check.bash
 $script_bin/bin/http_cache_diff.bash
 $script_bin/bin/http_cache_file.bash
+$script_bin/bin/http_cache_ls.bash
 $script_bin/bin/http_compression_stats.bash
 $script_bin/bin/http_response_stats.bash
-$script_bin/bin/ls_cache_files.bash
 SCRIPTS
 
 # initialize lib dir

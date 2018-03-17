@@ -22,7 +22,9 @@
 
 display_help () {
 /bin/cat <<- HELP_MSG
-	Given the location of an HTTP resource, this script ...
+	This script is a wrapper around the ls command-line tool.
+	It lists the cache files associated with the given HTTP
+	location.
 	
 	$usage_string
 	
