@@ -23,26 +23,27 @@
 display_help () {
 /bin/cat <<- HELP_MSG
 	This script checks to see if a previously cached HTTP resource 
-	is up-to-date. It is intended to be run as a cron job.
+	is up-to-date. The script performs a lightweight operation 
+	intended to be run as a cron job.
 	
 	$usage_string
 	
 	The script takes a single command-line argument, which is the 
 	absolute URL of an HTTP resource. Assuming the resource is
 	already cached, the script requests the resource via an HTTP 
-	conditional request [RFC 7232]. The resource is deemed up-to-date 
-	if (and only if) the web server responds with 304 Not Modified.
+	conditional (HEAD) request [RFC 7232]. The resource is deemed 
+	up-to-date if (and only if) the web server responds with 
+	304 Not Modified.
 	
 	If the server responds with 304, the script exits normally with 
 	exit code 0. If the server supports HTTP conditional requests 
-	and responds with 200 (instead of 304), the script logs a warning 
-	and exits with code 1, indicating that the cache is dirty and in 
-	need of update. If the server does not support HTTP conditional 
-	requests, or an unexpected HTTP response is received, the script 
-	logs an error and exits with code greater than 1.
+	(as indicated by an ETag in the response header) and responds 
+	with 200 (instead of 304), the script logs a warning and exits 
+	with code 1, indicating that the cache is dirty and in need of 
+	update. See below for details about exit codes.
 	
 	Regardless of the exit status, this script produces no output 
-	and, moreover, no cache write occurs under any circumstances.
+	and, moreover, no cache write will occur under any circumstances.
 	
 	Options:
 	   -h      Display this help message
@@ -58,10 +59,25 @@ display_help () {
 	Compressed Mode (option -z) enables HTTP Compression by adding an 
 	Accept-Encoding header to the request; that is, if option -z is 
 	enabled, the client merely indicates its support for HTTP Compression 
-	in the request. The server may or may not compress the response.
+	in the request. The server will indicate its support for HTTP
+	Compression (or not) in the response header.
 	
 	Important! This implementation treats compressed and uncompressed 
 	requests for the same resource as two distinct cachable resources.
+	
+	EXIT CODES
+	
+	The following exit codes are emitted by this script:
+	
+	  0: Cache is up-to-date (HTTP 304)
+	  1: Cache is NOT up-to-date (HTTP 200)
+	  2: Initialization failure
+	  3: Unexpected failure
+	  4: HTTP conditional requests not supported (no ETag)
+	  5: Unexpected HTTP response (neither 304 nor 200)
+	
+	If the resource was not previously cached at the time the script
+	was called, the exit code is guaranteed to be nonzero.
 	
 	ENVIRONMENT
 	
@@ -249,23 +265,20 @@ fi
 initial_log_message="$script_name BEGIN"
 final_log_message="$script_name END"
 
-# temporary file
-tmp_header_file="${tmp_dir}/http_response_header"
-
 #######################################################################
 #
 # Main processing
 #
-# 1. Issue an HTTP conditional HEAD request
-# 2. Determine the response code by inspecting the header
-# 3. Process the response code
+# 1. issue a conditional HEAD request
+# 2. compute the HTTP response code
+# 3. process the response code
 #
 #######################################################################
 
 print_log_message -I "$initial_log_message"
 
-# issue a HEAD request
-http_conditional_head $compression_opt -d "$CACHE_DIR" -T "$tmp_dir" "$location" > "$tmp_header_file"
+# issue a conditional HEAD request
+http_conditional_head $compression_opt -d "$CACHE_DIR" -T "$tmp_dir" "$location" > /dev/null
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name: http_conditional_head failed ($status_code)"
@@ -273,6 +286,7 @@ if [ $status_code -ne 0 ]; then
 fi
 
 # sanity check
+tmp_header_file="$tmp_dir/$( tmp_response_headers_filename )"
 if [ ! -f "$tmp_header_file" ]; then
 	print_log_message -E "$script_name unable to find header file $tmp_header_file"
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
