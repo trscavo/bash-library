@@ -25,34 +25,41 @@ display_help () {
 	This script is a wrapper around the diff command-line tool.
 	Like diff, this script compares two files and outputs a 
 	summary of the differences on stdout. Unlike diff, however,
-	this script fetches one of the documents from an HTTP server
-	and assumes the other document is already cached.
+	this script fetches one of the documents from an HTTP server.
 	
 	$usage_string
 	
-	This script takes one command-line argument. The HTTP_LOCATION 
-	argument is the absolute URL of an HTTP resource. If the resource 
-	is not cached, the script does nothing and returns a nonzero 
-	error code.
+	The script takes a single command-line argument, which is the 
+	absolute URL of an HTTP resource. Assuming the resource is
+	already cached, the script requests the resource via an HTTP 
+	conditional (GET) request [RFC 7232]. If the server responds 
+	with 304, the script immediately returns with exit code 0. 
 	
-	The script fetches the resource at the given URL using HTTP 
-	Conditional GET [RFC 7232]. If the server responds with 200, the 
-	document in the response body is compared to the cached document
-	using diff. In that case, the script returns whatever exit code 
-	diff returns.
+	If, however, the server responds with 200, the document in the 
+	response body is compared to the cached document using diff. In 
+	that case, the script returns whatever output and exit code diff 
+	returns. In particular, the script exits with code 0 if (and only 
+	if) the two documents are identical.
 	
-	If the server responds with 304, the script short-circuits with
-	exit code zero (since the two documents are the same).
+	If the resource is not already cached, a conditional request is
+	not issued and the script treats the non-existing cache file as 
+	though it were empty. In this case, the script is guaranteed to 
+	exit with a nonzero exit code.
 	
 	Note: This script does not update the cache under any circumstances!
 	
 	Options:
 	   -h      Display this help message
+	   -Q      Enables Quiet Mode
 	   -D      Enable DEBUG level logging
 	   -W      Enable WARN level logging
 	   -z      Enable HTTP Compression
 
 	Option -h is mutually exclusive of all other options.
+	
+	Option -Q enables quiet mode, in which case the script suppresses
+	all output. (Compare with 'diff -q', which outputs a single line
+	if the two files differ.)
 	
 	Options -D or -W enable DEBUG or WARN level logging, respectively.
 	This temporarily overrides the LOG_LEVEL environment variable,
@@ -150,7 +157,6 @@ fi
 lib_filenames[1]=core_lib.bash
 lib_filenames[2]=http_tools.bash
 lib_filenames[3]=http_cache_tools.bash
-#lib_filenames[4]=compatible_date.bash
 
 # check lib files
 for lib_filename in ${lib_filenames[*]}; do
@@ -165,15 +171,19 @@ done
 # Process command-line options and arguments
 #######################################################################
 
-usage_string="Usage: $script_name [-hDWzb] [-c|-e|-f|-u] HTTP_LOCATION"
+usage_string="Usage: $script_name [-hQDWz] [-bB] [-s] [-c|-u|-e|-n|-q] HTTP_LOCATION"
 
 # defaults
-help_mode=false
+help_mode=false; quiet_mode=false
+diff_opts='--unidirectional-new-file'  # treat the first file as empty if missing
 
-while getopts ":hDWzbcefu" opt; do
+while getopts ":hQDWzbBscuenq" opt; do
 	case $opt in
 		h)
 			help_mode=true
+			;;
+		Q)
+			quiet_mode=true
 			;;
 		D)
 			LOG_LEVEL=4  # DEBUG
@@ -184,7 +194,7 @@ while getopts ":hDWzbcefu" opt; do
 		z)
 			compression_opt="$compression_opt -$opt"
 			;;
-		[bcefu])
+		[bBscuenq])
 			diff_opts="$diff_opts -$opt"
 			;;
 		\?)
@@ -235,8 +245,8 @@ if [ $status_code -ne 0 ]; then
 	exit 2
 fi
 
-# temporary files
-http_file_path="${tmp_dir}/http_file"
+# temporary file
+diff_out="${tmp_dir}/diff_out.txt"
 
 # special log messages
 initial_log_message="$script_name BEGIN"
@@ -246,39 +256,62 @@ final_log_message="$script_name END"
 #
 # Main processing
 #
-# 1. If the resource is not cached, exit with nonzero exit code
-# 2. Fetch the resource using HTTP Conditional GET
-# 3. If the cached resource is up to date, exit with exit code 0
-# 4. Compute the diff and exit with the diff exit code
+# 1. determine the cached file path
+# 2. conditionally GET the resource, do not write to cache
+# 3. check the HTTP response code
+# 4. compute the diff and exit
 #
 #######################################################################
 
 print_log_message -I "$initial_log_message"
 
-# Check if resource is cached
+# determine the cached file path
 cache_file_path=$( cache_response_body_file $compression_opt -d "$CACHE_DIR" "$location" )
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name: cache_response_body_file failed ($status_code) on location $location"
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
 fi
-if [ ! -f "$cache_file_path" ]; then
-	print_log_message -E "$script_name: file does not exist: $cache_file_path"
-	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 4
-fi
 print_log_message -I "$script_name using cached file $cache_file_path"
 
-# Fetch the resource, do not write to cache
+# conditionally GET the resource, do not write to cache
 print_log_message -D "$script_name fetching HTTP resource $location"
-http_conditional_get $compression_opt -F -x -d "$CACHE_DIR" -T "$tmp_dir" "$location" > "$http_file_path"
+http_conditional_get $compression_opt -x -d "$CACHE_DIR" -T "$tmp_dir" "$location" > /dev/null
 status_code=$?
-if [ $status_code -gt 1 ]; then
+if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name http_conditional_get failed ($status_code) on location $location"
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
 fi
-# if HTTP 304 response, short-circuit with exit code 0
-[ $status_code -eq 1 ] && clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 0
 
-# Compute the diff and exit
-/usr/bin/diff $diff_opts "$cache_file_path" "$http_file_path"
-clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $?
+# sanity check
+tmp_header_file="$tmp_dir/$( tmp_response_headers_filename )"
+if [ ! -f "$tmp_header_file" ]; then
+	print_log_message -E "$script_name unable to find header file $tmp_header_file"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+
+# check the HTTP response code
+response_code=$( get_response_code "$tmp_header_file" )
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: get_response_code failed ($status_code)"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+# short-circuit if cache is up to date
+if [ "$response_code" = 304 ]; then
+	print_log_message -I "$script_name: cache is up-to-date for resource: $location"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 0
+fi
+
+# sanity check
+http_file_path="$tmp_dir/$( tmp_response_body_filename )"
+if [ ! -f "$http_file_path" ]; then
+	print_log_message -E "$script_name unable to find response file $http_file_path"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+
+# compute the diff and exit
+/usr/bin/diff $diff_opts "$cache_file_path" "$http_file_path" > "$diff_out"
+diff_status_code=$?
+! $quiet_mode && /bin/cat "$diff_out"
+clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $diff_status_code
