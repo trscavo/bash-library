@@ -220,7 +220,8 @@ http_request () {
 	local cached_request_file
 	local cached_header_file
 	local cached_content_file
-	local adjective
+	local conditional_adjective
+	local compressed_adjective
 	local resource_is_cached
 	local tmp_header_file
 	local tmp_content_file
@@ -373,7 +374,8 @@ http_request () {
 		print_log_message -E "$FUNCNAME: cache_response_body_file failed ($exit_code) to compute cached_content_file"
 		return 4
 	fi
-	$compressed_mode && adjective="compressed "
+	
+	$compressed_mode && compressed_adjective="compressed "
 
 	print_log_message -D "$FUNCNAME using cached request file: $cached_request_file"
 	print_log_message -D "$FUNCNAME using cached header file: $cached_header_file"
@@ -389,7 +391,7 @@ http_request () {
 		
 		# quiet failure mode
 		if $check_cache_mode; then
-			print_log_message -W "$FUNCNAME: ${adjective}resource not cached: $location"
+			print_log_message -W "$FUNCNAME: ${compressed_adjective}resource not cached: $location"
 			return 1
 		fi
 		
@@ -442,11 +444,11 @@ http_request () {
 	
 	# capture the output iff the client issues a GET request
 	if $head_request_mode; then
-		print_log_message -I "$FUNCNAME issuing HEAD request for ${adjective}resource: $location"
+		request_type=HEAD
 		curl_opts="${curl_opts} --head"
 		curl_opts="${curl_opts} --output '/dev/null'"
 	else
-		print_log_message -I "$FUNCNAME issuing GET request for ${adjective}resource: $location"
+		request_type=GET
 		curl_opts="${curl_opts} --output '${tmp_content_file}'"
 	fi
 
@@ -480,7 +482,9 @@ http_request () {
 				curl_opts="${curl_opts} --header 'If-Modified-Since: $header_value'"
 			fi
 		fi
+		conditional_adjective="conditional "
 	fi
+	print_log_message -I "$FUNCNAME issuing ${conditional_adjective}$request_type request for ${compressed_adjective}resource: $location"
 
 	# invoke curl
 	print_log_message -D "$FUNCNAME invoking curl with options: $curl_opts"
@@ -547,7 +551,7 @@ http_request () {
 
 		# quiet failure mode
 		if $check_cache_mode; then
-			print_log_message -W "$FUNCNAME: ${adjective}resource is not up-to-date: $location"
+			print_log_message -W "$FUNCNAME: ${compressed_adjective}resource is not up-to-date: $location"
 			return 1
 		fi
 		
