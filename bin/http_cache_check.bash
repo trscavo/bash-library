@@ -23,8 +23,8 @@
 display_help () {
 /bin/cat <<- HELP_MSG
 	This script checks to see if a previously cached HTTP resource 
-	is up-to-date. The script performs a lightweight operation 
-	intended to be run as a cron job.
+	is up-to-date. The script performs a lightweight network
+	operation intended to be run as a cron job.
 	
 	$usage_string
 	
@@ -32,12 +32,13 @@ display_help () {
 	absolute URL of an HTTP resource. Assuming the resource is
 	already cached, the script requests the resource via an HTTP 
 	conditional (HEAD) request [RFC 7232]. The resource is deemed 
-	up-to-date if (and only if) the web server responds with 
+	to be up-to-date if (and only if) the web server responds with 
 	304 Not Modified.
 	
-	If the server responds with 304, the script exits normally with 
-	exit code 0. If the server supports HTTP conditional requests 
-	(as indicated by an ETag in the response header) and responds 
+	If the server supports HTTP conditional requests (as indicated 
+	by an ETag in the response header), a successful response will 
+	be either 304 or 200. If the server responds with 304, the 
+	script exits normally with exit code 0. If the server responds 
 	with 200 (instead of 304), the script logs a warning and exits 
 	with code 1, indicating that the cache is dirty and in need of 
 	update. See below for details about exit codes.

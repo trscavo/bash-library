@@ -56,6 +56,9 @@ display_help () {
 	   -z      Enable HTTP Compression
 
 	Option -h is mutually exclusive of all other options.
+	Options -c, -u, -e, -n, -q, and -Q are mutually exclusive since
+	each of these options determines the output if the files are
+	different.
 	
 	Option -Q enables quiet mode, in which case the script suppresses
 	all output. (Compare with 'diff -q', which outputs a single line
@@ -171,11 +174,11 @@ done
 # Process command-line options and arguments
 #######################################################################
 
-usage_string="Usage: $script_name [-hQDWz] [-bB] [-s] [-c|-u|-e|-n|-q] HTTP_LOCATION"
+usage_string="Usage: $script_name [-hDWz] [-bBs] [-c|-u|-e|-n|-q|-Q] HTTP_LOCATION"
 
 # defaults
 help_mode=false; quiet_mode=false
-diff_opts='--unidirectional-new-file'  # treat the first file as empty if missing
+diff_opts='--unidirectional-new-file'  # always treat the first file as empty if missing
 
 while getopts ":hQDWzbBscuenq" opt; do
 	case $opt in
