@@ -23,17 +23,16 @@
 display_help () {
 /bin/cat <<- HELP_MSG
 	This script checks to see if a previously cached HTTP resource 
-	is up-to-date. The script performs a lightweight network
-	operation intended to be run as a cron job.
+	is up-to-date. By default, the script performs a lightweight 
+	network operation intended to be run as a cron job.
 	
 	$usage_string
 	
 	The script takes a single command-line argument, which is the 
 	absolute URL of an HTTP resource. Assuming the resource is
 	already cached, the script requests the resource via an HTTP 
-	conditional (HEAD) request [RFC 7232]. The resource is deemed 
-	to be up-to-date if (and only if) the web server responds with 
-	304 Not Modified.
+	conditional (HEAD) request [RFC 7232]. The resource is up-to-date 
+	if (and only if) the web server responds with 304 Not Modified.
 	
 	If the server supports HTTP conditional requests (as indicated 
 	by an ETag in the response header), a successful response will 
@@ -50,12 +49,21 @@ display_help () {
 	   -h      Display this help message
 	   -D      Enable DEBUG logging
 	   -W      Enable WARN logging
+	   -t      Enable "Try Hard Mode"
 	   -z      Enable "Compressed Mode"
 
 	Option -h is mutually exclusive of all other options.
 	
 	Options -D or -W enable DEBUG or WARN logging, respectively.
 	This temporarily overrides the LOG_LEVEL environment variable.
+	
+	Option -t enables Try Hard Mode. If the server responds with 200,
+	but HTTP conditional requests are not supported (indicated by the
+	absence of an ETag in the response header), the script issues an
+	ordinary HTTP GET request for the resource. It then compares the
+	cached file with the file on the server byte-by-byte (using diff).
+	The script exits normally with exit code 0 if (and only if) the 
+	two files are identical.
 	
 	Compressed Mode (option -z) enables HTTP Compression by adding an 
 	Accept-Encoding header to the request; that is, if option -z is 
@@ -70,15 +78,16 @@ display_help () {
 	
 	The following exit codes are emitted by this script:
 	
-	  0: Cache is up-to-date (HTTP 304)
-	  1: Cache is NOT up-to-date (HTTP 200)
+	  0: Cache is up-to-date
+	  1: Cache is NOT up-to-date
 	  2: Initialization failure
 	  3: Unexpected failure
 	  4: HTTP conditional requests not supported (no ETag)
 	  5: Unexpected HTTP response (neither 304 nor 200)
 	
-	If the resource was not previously cached at the time the script
-	was called, the exit code is guaranteed to be nonzero.
+	To work around exit code 4, enable Try Hard Mode (option -t). In 
+	any case, if the resource was not previously cached at the time 
+	the script was called, the exit code is guaranteed to be nonzero.
 	
 	ENVIRONMENT
 	
@@ -128,6 +137,9 @@ display_help () {
 	  \$ ${0##*/} \$url2
 	  \$ echo \$?
 	  4                             # HTTP conditional requests not supported
+	  \$ ${0##*/} -t \$url2
+	  \$ echo \$?
+	  0                             # the cache is up-to-date
 HELP_MSG
 }
 
@@ -180,7 +192,6 @@ fi
 lib_filenames[1]=core_lib.bash
 lib_filenames[2]=http_tools.bash
 lib_filenames[3]=http_cache_tools.bash
-#lib_filenames[4]=compatible_date.bash
 
 # check lib files
 for lib_filename in ${lib_filenames[*]}; do
@@ -195,12 +206,12 @@ done
 # Process command-line options and arguments
 #######################################################################
 
-usage_string="Usage: $script_name [-hDWz] HTTP_LOCATION"
+usage_string="Usage: $script_name [-hDWtz] HTTP_LOCATION"
 
 # defaults
-help_mode=false
+help_mode=false; try_hard_mode=false
 
-while getopts ":hDWz" opt; do
+while getopts ":hDWtz" opt; do
 	case $opt in
 		h)
 			help_mode=true
@@ -210,6 +221,9 @@ while getopts ":hDWz" opt; do
 			;;
 		W)
 			LOG_LEVEL=2  # WARN
+			;;
+		t)
+			try_hard_mode=true
 			;;
 		z)
 			compression_opt="$compression_opt -$opt"
@@ -301,22 +315,52 @@ if [ $status_code -ne 0 ]; then
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
 fi
 
-# process the response code
+# process terminal conditions
 if [ "$response_code" = 304 ]; then
 	print_log_message -I "$script_name: cache is up-to-date for resource: $location"
-	status_code=0
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 0
 elif [ "$response_code" = 200 ]; then
 	header_value=$( get_header_value "$tmp_header_file" ETag )
 	if [ -n "$header_value" ]; then
 		print_log_message -W "$script_name: cache is NOT up-to-date for resource: $location"
-		status_code=1
-	else
+		clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 1
+	elif ! $try_hard_mode; then
 		print_log_message -E "$script_name: HTTP conditional request not supported for resource: $location"
-		status_code=4
+		clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 4
 	fi
 else
 	print_log_message -E "$script_name: unexpected HTTP response ($response_code) for resource: $location"
-	status_code=5
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 5
 fi
 
-clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $status_code
+# HTTP conditional requests are not supported but try_hard_mode is enabled
+print_log_message -I "$script_name: HTTP conditional request not supported for resource: $location"
+
+# determine the cached file path
+cache_file_path=$( cache_response_body_file $compression_opt -d "$CACHE_DIR" "$location" )
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: cache_response_body_file failed ($status_code) on location $location"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+print_log_message -I "$script_name using cached file $cache_file_path"
+
+# GET the resource, do not write to cache
+print_log_message -D "$script_name fetching HTTP resource $location"
+http_get $compression_opt -x -d "$CACHE_DIR" -T "$tmp_dir" "$location" > /dev/null
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: http_get failed ($status_code) on location $location"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+
+# sanity check
+http_file_path="$tmp_dir/$( tmp_response_body_filename )"
+if [ ! -f "$http_file_path" ]; then
+	print_log_message -E "$script_name unable to find response file $http_file_path"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+
+# compute the diff and exit
+/usr/bin/diff -q "$cache_file_path" "$http_file_path" > /dev/null
+clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $?
