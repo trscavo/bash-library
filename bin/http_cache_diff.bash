@@ -33,13 +33,15 @@ display_help () {
 	absolute URL of an HTTP resource. Assuming the resource is
 	already cached, the script requests the resource via an HTTP 
 	conditional (GET) request [RFC 7232]. If the server responds 
-	with 304, the script immediately returns with exit code 0. 
+	with 304, the script immediately exits with code 0. 
 	
 	If, however, the server responds with 200, the document in the 
 	response body is compared to the cached document using diff. In 
 	that case, the script returns whatever output and exit code diff 
 	returns. In particular, the script exits with code 0 if (and only 
-	if) the two documents are identical.
+	if) the two documents are identical. OTOH, if the two documents 
+	are different, the script logs a warning message and exits with 
+	code 1.
 	
 	If the resource is not already cached, a conditional request is
 	not issued and the script treats the non-existing cache file as 
@@ -180,13 +182,10 @@ usage_string="Usage: $script_name [-hDWz] [-bBs] [-c|-u|-e|-n|-q|-Q] HTTP_LOCATI
 help_mode=false; quiet_mode=false
 diff_opts='--unidirectional-new-file'  # always treat the first file as empty if missing
 
-while getopts ":hQDWzbBscuenq" opt; do
+while getopts ":hDWzbBscuenqQ" opt; do
 	case $opt in
 		h)
 			help_mode=true
-			;;
-		Q)
-			quiet_mode=true
 			;;
 		D)
 			LOG_LEVEL=4  # DEBUG
@@ -199,6 +198,10 @@ while getopts ":hQDWzbBscuenq" opt; do
 			;;
 		[bBscuenq])
 			diff_opts="$diff_opts -$opt"
+			;;
+		Q)
+			quiet_mode=true
+			diff_opts="$diff_opts -q"  # more efficient
 			;;
 		\?)
 			echo "ERROR: $script_name: Unrecognized option: -$OPTARG" >&2
@@ -259,23 +262,14 @@ final_log_message="$script_name END"
 #
 # Main processing
 #
-# 1. determine the cached file path
-# 2. conditionally GET the resource, do not write to cache
-# 3. check the HTTP response code
+# 1. conditionally GET the resource, do not write to cache
+# 2. if HTTP 304, short-circuit
+# 3. determine the cached file path
 # 4. compute the diff and exit
 #
 #######################################################################
 
 print_log_message -I "$initial_log_message"
-
-# determine the cached file path
-cache_file_path=$( cache_response_body_file $compression_opt -d "$CACHE_DIR" "$location" )
-status_code=$?
-if [ $status_code -ne 0 ]; then
-	print_log_message -E "$script_name: cache_response_body_file failed ($status_code) on location $location"
-	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
-fi
-print_log_message -I "$script_name using cached file $cache_file_path"
 
 # conditionally GET the resource, do not write to cache
 print_log_message -D "$script_name fetching HTTP resource $location"
@@ -313,8 +307,25 @@ if [ ! -f "$http_file_path" ]; then
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
 fi
 
-# compute the diff and exit
+# determine the cached file path
+cache_file_path=$( cache_response_body_file $compression_opt -d "$CACHE_DIR" "$location" )
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: cache_response_body_file failed ($status_code) on location $location"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+print_log_message -I "$script_name using cached file $cache_file_path"
+
+# compute the diff and log a message
 /usr/bin/diff $diff_opts "$cache_file_path" "$http_file_path" > "$diff_out"
 diff_status_code=$?
+if [ $diff_status_code -eq 0 ]; then
+	print_log_message -I "$script_name: cache is up-to-date for resource: $location"
+elif [ $diff_status_code -eq 1 ]; then
+	print_log_message -W "$script_name: cache is NOT up-to-date for resource: $location"
+else
+	print_log_message -E "$script_name: /usr/bin/diff failed ($status_code) on location $location"
+fi
+
 ! $quiet_mode && /bin/cat "$diff_out"
 clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $diff_status_code
