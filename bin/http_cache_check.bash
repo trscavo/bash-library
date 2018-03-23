@@ -333,7 +333,9 @@ else
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 5
 fi
 
+# there's only one way to get through the above if-block:
 # HTTP conditional requests are not supported but try_hard_mode is enabled
+# in which case, prepare to try harder by comparing files byte-by-byte
 print_log_message -I "$script_name: HTTP conditional request not supported for resource: $location"
 
 # determine the cached file path
