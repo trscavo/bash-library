@@ -476,7 +476,7 @@ fi
 #
 #######################################################################
 
-/usr/bin/diff -q "$web_file" "$web_file_z"
+/usr/bin/cmp -s "$web_file" "$web_file_z"
 diffExitCode=$?
 print_log_message -I "$script_name: diff exit code: $diffExitCode"
 
