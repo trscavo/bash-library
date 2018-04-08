@@ -114,6 +114,8 @@ By default, the script directs its output to stdout. To redirect the output to a
 ```shell
 $ out_dir=/tmp/out/
 $ $BIN_DIR/http_response_stats.bash -d $out_dir $location
+$ ls $out_dir 
+63d19f0b58162ed82be8bd8cb663e46bfad56d47_response_stats.json
 ```
 
 Typically the output directory is a web directory. For illustration, the above example outputs a JSON file to a temporary directory.
