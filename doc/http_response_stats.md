@@ -100,7 +100,8 @@ NOTE. The response times for a compressed response may or may not be significant
 TIP. The server indicates a compressed response by including a `Content-Encoding` header. For example:
 
 ```shell
-$ curl --silent --head --compressed $location | grep -F Content-Encoding
+$ url=https://letsencrypt.org
+$ $BIN_DIR/chead.bash -z $url | grep -F Content-Encoding
 Content-Encoding: gzip
 ```
 
