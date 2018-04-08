@@ -50,13 +50,17 @@ The output data are sufficient to construct a time-series plot. The `requestInst
 
 ## Timing the response
 
-First specify the HTTP resource of interest:
+The `http_response_stats.bash` script has one required command-line argument:
+
+Usage: `http_response_stats.bash [-hqDWz] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
+
+The `LOCATION` argument is the URL of interest. Specify a location as follows:
 
 ```shell
 $ location=https://github.com/trscavo/bash-library/blob/master/doc/http_response_stats.md
 ```
 
-Now invoke the script as follows:
+Now invoke the script like this:
 
 ```shell
 $ $BIN_DIR/http_response_stats.bash $location
