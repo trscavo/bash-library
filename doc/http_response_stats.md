@@ -105,3 +105,26 @@ Content-Encoding: gzip
 ```
 
 If compression was not used, the `Content-Encoding` header will be missing.
+
+## Creating a JSON file
+
+By default, the script directs its output to stdout. To redirect the output to a particular directory, use the `-d` option:
+
+```shell
+$ out_dir=/tmp/out/
+$ $BIN_DIR/http_response_stats.bash -d $out_dir $location
+```
+
+Typically the output directory is a web directory. For illustration, the above example outputs a JSON file to a temporary directory.
+
+The script automatically determines the filename based on the SHA-1 hash of the location URL, and so the filename is unique. This uniqueness is maintained with or without the `-z` option.
+
+By default, the JSON array will have 10 elements. To specify some other array size, add option `-n` to the command line:
+
+```shell
+$ $BIN_DIR/http_response_stats.bash -n 30 -d $out_dir $location
+```
+
+The above command will output a JSON array of at most 30 elements. These elements correspond to the last 30 lines in the log file.
+
+That’s it! To keep the JSON file up to date, you can of course automate the previous process with cron.
