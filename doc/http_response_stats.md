@@ -81,3 +81,27 @@ $ $BIN_DIR/http_cache_ls.bash $location
 ```
 
 The filename prefix (`63d19f0b58162ed82be8bd8cb663e46bfad56d47`) is the SHA-1 hash of the location URL. In that way, each URL gives rise to a unique set of cache files.
+
+## Requesting a compressed response
+
+The `-z` option causes the client to request [HTTP Compression](https://en.wikipedia.org/wiki/HTTP_compression):
+
+```shell
+# request HTTP compression
+$ $BIN_DIR/http_response_stats.bash -z $location
+# do not request HTTP compression
+$ $BIN_DIR/http_response_stats.bash $location
+```
+
+It is then up to the server to send a compressed resource (or not). In any case, the script treats the two requests as different requests. In particular, the script uses different log files in each case. The output is completely separate.
+
+NOTE. The response times for a compressed response may or may not be significantly different from the response times of an uncompressed response. Even if the the server compresses the response, the file may be too small to produce a noticeable difference.
+
+TIP. The server indicates a compressed response by including a `Content-Encoding` header. For example:
+
+```shell
+$ curl --silent --head --compressed $location | grep -F Content-Encoding
+Content-Encoding: gzip
+```
+
+If compression was not used, the `Content-Encoding` header will be missing.
