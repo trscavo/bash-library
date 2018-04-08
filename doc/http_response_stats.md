@@ -7,29 +7,29 @@ The tool persists the response time values to a log file. It then converts a por
 ```javascript
 [
   {
-    "requestInstant": "2018-04-07T14:31:50Z"
+    "requestInstant": "2018-04-08T20:46:53Z"
     ,
-    "friendlyDate": "April 07, 2018"
+    "friendlyDate": "April 08, 2018"
     ,
     "curlExitCode": "0"
     ,
     "responseCode": "200"
     ,
-    "sizeDownload": 50078966
+    "sizeDownload": 43730
     ,
-    "speedDownload": 12648218.000
+    "speedDownload": 88461.000
     ,
-    "timeNamelookup": 0.271865
+    "timeNamelookup": 0.030218
     ,
-    "timeConnect": 0.298768
+    "timeConnect": 0.062788
     ,
-    "timeAppconnect": 0.400534
+    "timeAppconnect": 0.148901
     ,
-    "timePretransfer": 0.400674
+    "timePretransfer": 0.148989
     ,
-    "timeStarttransfer": 0.452934
+    "timeStarttransfer": 0.425072
     ,
-    "timeTotal": 3.959369
+    "timeTotal": 0.494339
   }
 ]
 ```
@@ -122,7 +122,13 @@ Typically the output directory is a web directory. For illustration, the above e
 
 The script automatically determines the filename based on the SHA-1 hash of the location URL, and so the filename is unique. This uniqueness is maintained with or without the `-z` option.
 
-By default, the JSON array will have 10 elements. To specify some other array size, add option `-n` to the command line:
+By default, the JSON array will have 10 elements. To specify some other array size, add option `-n` to the command line. For example, the following command generated the output shown at the beginning of this document:
+
+```shell
+$ $BIN_DIR/http_response_stats.bash -n 1 $location
+```
+
+Here's another example:
 
 ```shell
 $ $BIN_DIR/http_response_stats.bash -n 30 -d $out_dir $location
