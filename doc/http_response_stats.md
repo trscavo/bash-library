@@ -47,3 +47,37 @@ The remaining fields in the JSON output are computed by curl. In particular, the
 The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). Finally the total time is given by the `timeTotal` value.
 
 The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either of the `speedDownload` or `timeTotal` fields give rise to interesting time-series plots.
+
+## Timing the response
+
+First specify the HTTP resource of interest:
+
+```shell
+$ location=https://github.com/trscavo/bash-library/blob/master/doc/http_response_stats.md
+```
+
+Now invoke the script as follows:
+
+```shell
+$ $BIN_DIR/http_response_stats.bash $location
+```
+
+Every invocation of the script performs the following steps:
+
+1. Issue an HTTP GET request
+1. Update the corresponding response log file with the results
+1. Print a tail of the response log file in JSON format
+
+The log file is maintained in the cache directory:
+
+```shell
+$ echo $CACHE_DIR 
+/tmp/http_cache
+$ $BIN_DIR/http_cache_ls.bash $location 
+/tmp/http_cache/63d19f0b58162ed82be8bd8cb663e46bfad56d47_request_headers
+/tmp/http_cache/63d19f0b58162ed82be8bd8cb663e46bfad56d47_response_body
+/tmp/http_cache/63d19f0b58162ed82be8bd8cb663e46bfad56d47_response_headers
+/tmp/http_cache/63d19f0b58162ed82be8bd8cb663e46bfad56d47_response_log
+```
+
+The filename prefix (`63d19f0b58162ed82be8bd8cb663e46bfad56d47`) is the SHA-1 hash of the location URL. In that way, each URL gives rise to a unique set of cache files.
