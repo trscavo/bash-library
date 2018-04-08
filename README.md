@@ -4,7 +4,7 @@ A library of re-usable bash scripts
 
 ## Overview
 
-Bash Library features:
+This Bash Library includes the following features:
 
 * implements an HTTP conditional request ([RFC 7232](https://tools.ietf.org/html/rfc7232)) client
 * monitors an HTTP resource that supports HTTP Compression
@@ -12,6 +12,14 @@ Bash Library features:
 * includes a compatibility layer (Linux and Mac OS)
 * has a built-in logging facility
 * is cron-friendly
+
+For detailed information about one of the tools, consult the tool's online help. For example, type:
+
+```Shell
+$ $BIN_DIR/cget.bash -h
+```
+
+to find out more about the HTTP conditional request client.
 
 ## Installation
 
