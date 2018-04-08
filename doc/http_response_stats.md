@@ -2,7 +2,7 @@
 
 This document shows how to use one of the bash tools (`http_response_stats.bash`) to measure response times from an HTTP server. The tool is essentially a wrapper around the `curl` command-line tool, which has extensive timing capabilities.
 
-The tool persists the response time values to a log file. It then converts a portion of the log file to JSON. Here is the simplest example of a JSON array with one element:
+The `http_response_stats.bash` tool computes and persists the response time values to a log file. It then converts a portion of the log file to JSON. Here is the simplest example of a JSON array with one element:
 
 ```javascript
 [
@@ -40,11 +40,11 @@ The `friendlyDate` field indicates the date of the request. The time subfield is
 
 The `curlExitCode` field is just that. Normally this code will be zero. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
 	
-Note that the documentation for each exit code is individually addressable. For example, the link to the documentation for exit code 28 (timeout) is: https://curl.haxx.se/docs/manpage.html#28
+Note that the documentation for each exit code is individually addressable. For example, the online documentation explains that [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
 	
-The remaining fields in the JSON output are computed by curl. In particular, the timing values start with the word “time”. They were obtained by invoking the `curl --write-out` option. The semantics of each [`--write-out` parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page. 
+The remaining fields in the JSON output are computed by curl. In particular, the timing values (each starting with the word “time” in the output) were obtained by invoking the `curl --write-out` option. The semantics of each [`--write-out` parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page. 
 
-The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). Finally the total time is given by the `timeTotal` value.
+The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768 secs) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). The final time listed is the total time, given by the `timeTotal` value.
 
 The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either of the `speedDownload` or `timeTotal` fields give rise to interesting time-series plots.
 
