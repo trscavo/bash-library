@@ -116,3 +116,36 @@ $ $BIN_DIR/http_cache_ls.bash $location
 The filename prefix (`330c712018edbc68c11fa4b7994307c132e4edf1`) is the SHA-1 hash of the location URL. In this way, each URL gives rise to a unique set of cache files.
 
 Note the suffix `_z` on some of the filenames. This is the compressed response.
+
+## Creating JSON output files
+
+By default, the script directs its output to stdout. To redirect the output to a particular directory, use the `-d` option:
+
+```shell
+$ out_dir=/tmp/out/
+$ $BIN_DIR/http_compression_stats.bash -d $out_dir $location
+$ ls $out_dir 
+330c712018edbc68c11fa4b7994307c132e4edf1_compression_stats.json
+330c712018edbc68c11fa4b7994307c132e4edf1_response_stats.json
+330c712018edbc68c11fa4b7994307c132e4edf1_response_stats_z.json
+```
+
+Typically the output directory is a web directory. For illustration, the above example outputs the JSON files to a temporary directory.
+
+The script automatically determines the filenames of the JSON files based on the SHA-1 hash of the location URL, and so the filenames are unique.
+
+By default, the JSON array will have 10 elements. To specify some other array size, add option `-n` to the command line. For example, the following command generated the output shown at the beginning of this document:
+
+```shell
+$ $BIN_DIR/http_compression_stats.bash -n 1 $location
+```
+
+Here's another example:
+
+```shell
+$ $BIN_DIR/http_compression_stats.bash -n 30 -d $out_dir $location
+```
+
+The above command will output a JSON array of at most 30 elements. These elements correspond to the last 30 lines in the log file.
+
+That’s it! To keep the JSON file up to date, you can of course automate the previous process with cron.
