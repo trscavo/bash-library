@@ -46,12 +46,22 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
 ]
 ```
 
-In the JSON output, the value of the `requestInstant` field indicates the actual time instant the script was run. Its value has the canonical form of an ISO 8601 dateTime string.
+In the JSON output, the value of the `requestInstant` field indicates the actual time instant the script was run. Its value has the canonical form of an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) dateTime string.
 
-The `friendlyDate` field indicates the date of the request. The time subfield is omitted from the `friendlyDate` field.
+The `friendlyDate` field indicates the date of the request. The time of the initial request is omitted from the `friendlyDate` field for readability.
 
-The two response bodies are compared byte-by-byte using the `diff` command-line tool. The `diffExitCode` records the result of this comparison. The response bodies are identical if (and only if) the value of the `diffExitCode` field is zero.
+The tool compares the content of the two responses byte-by-byte. The `diffExitCode` field records the result of this comparison. The response bodies are identical if (and only if) the value of the `diffExitCode` field is zero.
 
-The `curlExitCode` field is just that. Normally this code will be zero. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
+Note: The tool uses the `/usr/bin/cmp` command-line tool (not `/usr/bin/diff`) to compare content. The former is more versatile since it works on both text and binary resources.
 
-Note that the documentation for each exit code is individually addressable. For example, the online documentation explains that [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
+The rest of the JSON output consists of two JavaScript objects, one for the uncompressed response and the other for the compressed response (resp.). The two objects contain the same fields.
+
+The `curlExitCode` field is just that. Normally this code will be zero, indicating that curl was successful. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
+
+Note that the documentation for each exit code is individually addressable. For example, the online documentation for [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
+
+The `responseCode` field is the HTTP response code. Normally this is 200 but other responses are possible of course. If the `curlExitCode` is nonzero, and the HTTP response did not complete, the `responseCode` will be 000.
+
+The remaining fields are computed by curl. The values were obtained by invoking the `curl --write-out` option. The semantics of each [option parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page.
+
+The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either  the `speedDownload` field or the `timeTotal` field gives rise to interesting time-series plots.
