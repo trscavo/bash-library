@@ -295,13 +295,13 @@ done
 # Process command-line options and arguments
 #######################################################################
 
-usage_string="Usage: $script_name [-hqDW] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION"
+usage_string="Usage: $script_name [-hqDWa] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION"
 
 # defaults
 help_mode=false; quiet_mode=false
 numObjects=10
 
-while getopts ":hqDWn:d:" opt; do
+while getopts ":hqDWan:d:" opt; do
 	case $opt in
 		h)
 			help_mode=true
@@ -314,6 +314,9 @@ while getopts ":hqDWn:d:" opt; do
 			;;
 		W)
 			LOG_LEVEL=2  # WARN
+			;;
+		a)
+			out_opt="-$opt"
 			;;
 		n)
 			numObjects="$OPTARG"
@@ -508,9 +511,9 @@ print_log_message -I "$script_name using log file: $compression_log_file_path"
 tmp_log_file="$tmp_dir/compression_log_tail.txt"
 /usr/bin/tail -n $numObjects "$compression_log_file_path" > "$tmp_log_file"
 
-# if there is no output dir, print JSON to stdout, otherwise continue
+# if there is no output dir, print JSON to stdout and exit, otherwise continue
 if [ -z "$out_dir" ]; then
-	print_json_array "$tmp_log_file" append_compression_object
+	print_json_array "$tmp_log_file" "append_compression_object $out_opt"
 	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" $?
 fi
 
@@ -524,7 +527,7 @@ fi
 print_log_message -I "$script_name using output file: $out_file"
 
 # print JSON to the file
-print_json_array "$tmp_log_file" append_compression_object > "$out_file"
+print_json_array "$tmp_log_file" "append_compression_object $out_opt" > "$out_file"
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name print_json_array failed ($status_code)"
@@ -552,7 +555,7 @@ fi
 print_log_message -I "$script_name using output file: $out_file"
 
 # print JSON to the file
-print_json_array "$tmp_log_file" append_response_object > "$out_file"
+print_json_array "$tmp_log_file" "append_response_object $out_opt" > "$out_file"
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name print_json_array failed ($status_code)"
@@ -580,7 +583,7 @@ fi
 print_log_message -I "$script_name using output file: $out_file"
 
 # print JSON to the file
-print_json_array "$tmp_log_file" append_response_object > "$out_file"
+print_json_array "$tmp_log_file" "append_response_object $out_opt" > "$out_file"
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name print_json_array failed ($status_code)"
