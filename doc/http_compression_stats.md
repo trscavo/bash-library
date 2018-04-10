@@ -65,3 +65,54 @@ The `responseCode` field is the HTTP response code. Normally this is 200 but oth
 The remaining fields are computed by curl. The values were obtained by invoking the `curl --write-out` option. The semantics of each [option parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page.
 
 The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either  the `speedDownload` field or the `timeTotal` field gives rise to interesting time-series plots.
+
+## Timing the response
+
+The `http_compression_stats.bash` script has one required command-line argument:
+
+Usage: `http_compression_stats.bash [-hqDW] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
+
+The `LOCATION` argument is the URL of interest. For example, a location may be specified as follows:
+
+```shell
+$ location=http://crl.tcs.terena.org/TERENASSLCA.crl
+```
+
+Now invoke the script like this:
+
+```shell
+$ $BIN_DIR/http_compression_stats.bash $location
+```
+
+Every invocation of the script performs the following steps:
+
+1. Issue an HTTP GET request (without compression)
+1. Update the corresponding response log file with the results
+1. Issue an HTTP GET request (with compression)
+1. Update the corresponding response log file with the results
+1. Compute the diff of the two resources
+1. Update the compression log file with the overall results
+1. Print a tail of the compression log file in JSON format
+1. Print a tail of the (uncompressed) response log file in JSON format
+1. Print a tail of the (compressed) response log file in JSON format
+
+The compression log file is maintained in the cache directory:
+
+```shell
+$ echo $CACHE_DIR 
+/tmp/http_cache
+$ $BIN_DIR/http_cache_ls.bash $location
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_compression_log
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_request_headers
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_request_headers_z
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_body
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_body_z
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_headers
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_headers_z
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_log
+/tmp/http_cache/330c712018edbc68c11fa4b7994307c132e4edf1_response_log_z
+```
+
+The filename prefix (`330c712018edbc68c11fa4b7994307c132e4edf1`) is the SHA-1 hash of the location URL. In this way, each URL gives rise to a unique set of cache files.
+
+Note the suffix `_z` on some of the filenames. This is the compressed response.
