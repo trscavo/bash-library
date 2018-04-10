@@ -21,34 +21,24 @@ The `http_response_stats.bash` tool computes and persists the response time valu
     ,
     "speedDownload": 88461.000
     ,
-    "timeNamelookup": 0.030218
-    ,
-    "timeConnect": 0.062788
-    ,
-    "timeAppconnect": 0.148901
-    ,
-    "timePretransfer": 0.148989
-    ,
-    "timeStarttransfer": 0.425072
-    ,
     "timeTotal": 0.494339
   }
 ]
 ```
 
-In the JSON output, the value of the `requestInstant` field indicates the actual time instant the script was run. Its value has the canonical form of an ISO 8601 dateTime string.
-	
-The `friendlyDate` field indicates the date of the request. The time subfield is omitted from the `friendlyDate` field.
+In the JSON output, the value of the `requestInstant` field indicates the actual time instant the script was run. Its value has the canonical form of an [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) dateTime string.
 
-The `curlExitCode` field is just that. Normally this code will be zero. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
-	
-Note that the documentation for each exit code is individually addressable. For example, the online documentation explains that [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
-	
-The remaining fields in the JSON output are computed by curl. In particular, the timing values (each starting with the word “time” in the output) were obtained by invoking the `curl --write-out` option. The semantics of each [`--write-out` parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page. 
+The `friendlyDate` field indicates the date of the request. The time of the initial request is omitted from the `friendlyDate` field for readability.
 
-The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768 secs) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). The final time listed is the total time, given by the `timeTotal` value.
+The `curlExitCode` field is just that. Normally this code will be zero, indicating that curl was successful. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
 
-The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either of the `speedDownload` or `timeTotal` fields give rise to interesting time-series plots.
+Note that the documentation for each exit code is individually addressable. For example, the online documentation for [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
+
+The remaining fields are computed by curl. The values were obtained by invoking the `curl --write-out` option. The semantics of each [write-out parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page.
+
+In particular, the `responseCode` field is the HTTP response code. Normally this is 200 but other responses are possible of course. If the `curlExitCode` is nonzero, and the HTTP response did not complete, the `responseCode` will be 000.
+
+The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either  the `speedDownload` field or the `timeTotal` field gives rise to interesting time-series plots.
 
 ## Timing the response
 
@@ -134,12 +124,51 @@ By default, the JSON array will have 10 elements. To specify some other array si
 $ $BIN_DIR/http_response_stats.bash -n 1 $location
 ```
 
-Here's another example:
+Here's another, more realistic example:
 
 ```shell
 $ $BIN_DIR/http_response_stats.bash -n 30 -d $out_dir $location
 ```
 
-The above command will output a JSON array of at most 30 elements. These elements correspond to the last 30 lines in the log file.
+The above command will output a JSON array of at most 30 objects. These objects correspond to the last 30 lines in the log file.
+
+Every JSON object includes a `timeTotal` field. To output additional timing data per JSON object, use the -a option, which outputs all available timing data. For example:
+
+```shell
+$ $BIN_DIR/http_response_stats.bash -n 1 -a $location
+[
+  {
+    "requestInstant": "2018-04-08T20:46:53Z"
+    ,
+    "friendlyDate": "April 08, 2018"
+    ,
+    "curlExitCode": "0"
+    ,
+    "responseCode": "200"
+    ,
+    "sizeDownload": 43730
+    ,
+    "speedDownload": 88461.000
+    ,
+    "timeNamelookup": 0.030218
+    ,
+    "timeConnect": 0.062788
+    ,
+    "timeAppconnect": 0.148901
+    ,
+    "timePretransfer": 0.148989
+    ,
+    "timeStarttransfer": 0.425072
+    ,
+    "timeTotal": 0.494339
+  }
+]
+```
+
+The timing values (each starting with the word “time” in the output) were obtained by invoking the `curl --write-out` option. The semantics of each [write-out parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page. 
+
+The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768 secs) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). The final time listed is the total time, given by the `timeTotal` value, which is always included in the output, even if option `-a` is omitted.
+
+Be careful, though, depending on the total number of JSON objects, the use of option `-a` could bloat the JSON file considerably.
 
 That’s it! To keep the JSON file up to date, you can of course automate the previous process with cron.
