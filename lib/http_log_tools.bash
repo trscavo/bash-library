@@ -46,6 +46,8 @@ timestamp_log_file () {
 #
 # Usage: update_timestamp_log [-z] -T TMP_DIR -d CACHE_DIR LOCATION TIMESTAMP
 #
+# Note: TMP_DIR is currently unused
+#
 # Dependencies:
 #   core_lib.bash
 #   http_tools.bash
@@ -451,22 +453,12 @@ update_response_log () {
 }
 
 append_response_object () {
+	# usage: append_response_object DATE_TIME CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
+	# request parameter
 	local requestInstant
-	local exitCode
-	local response_code
-	local size_download
-	local speed_download
-	local time_namelookup
-	local time_connect
-	local time_appconnect
-	local time_pretransfer
-	local time_starttransfer
-	local time_total
 	
 	requestInstant=$1
-	exitCode=$2
-	eval "$3"
 	
 	/bin/cat <<- JSON_OBJECT
 	  {
@@ -474,25 +466,7 @@ append_response_object () {
 	    ,
 	    "friendlyDate": "$( dateTime_canonical2friendlyDate $requestInstant )"
 	    ,
-	    "curlExitCode": "$exitCode"
-	    ,
-	    "responseCode": "$response_code"
-	    ,
-	    "sizeDownload": $size_download
-	    ,
-	    "speedDownload": $speed_download
-	    ,
-	    "timeNamelookup": $time_namelookup
-	    ,
-	    "timeConnect": $time_connect
-	    ,
-	    "timeAppconnect": $time_appconnect
-	    ,
-	    "timePretransfer": $time_pretransfer
-	    ,
-	    "timeStarttransfer": $time_starttransfer
-	    ,
-	    "timeTotal": $time_total
+	$( curl2json -a -i 2 $2 $3 )
 	  }
 JSON_OBJECT
 }
@@ -663,12 +637,7 @@ update_compression_log () {
 		print_log_message -E "$FUNCNAME tail failed ($status_code)"
 		return 3
 	fi
-	
-	# process the compressed results
 	read -r curl_exit_code curl_result_string <<< "$compressed_results"
-	# add "_z" suffix to each parameter name in the result string
-	curl_result_string=$( echo "$curl_result_string" | $_SED -e 's/\([^=]*\)=/\1_z=/g' )
-	print_log_message -D "$FUNCNAME modified curl_result_string: $curl_result_string"
 	
 	# determine the log file
 	cached_log_file=$( compression_log_file -d "$cache_dir" $location )
@@ -691,40 +660,14 @@ update_compression_log () {
 }
 
 append_compression_object () {
+	# usage: append_compression_object DATE_TIME DIFF_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
+	# request parameters
 	local requestInstant
 	local diff_exit_code
-	
-	local curl_exit_code
-	local response_code
-	local size_download
-	local speed_download
-	local time_namelookup
-	local time_connect
-	local time_appconnect
-	local time_pretransfer
-	local time_starttransfer
-	local time_total
-	
-	local curl_exit_code_z
-	local response_code_z
-	local size_download_z
-	local speed_download_z
-	local time_namelookup_z
-	local time_connect_z
-	local time_appconnect_z
-	local time_pretransfer_z
-	local time_starttransfer_z
-	local time_total_z
-	
+		
 	requestInstant=$1
 	diff_exit_code=$2
-	
-	curl_exit_code=$3
-	eval "$4"
-	
-	curl_exit_code_z=$5
-	eval "$6"
 	
 	/bin/cat <<- JSON_OBJECT
 	  {
@@ -736,29 +679,125 @@ append_compression_object () {
 	    ,
 	    "UncompressedResponse":
 	    {
-	      "curlExitCode": "$curl_exit_code"
-	      ,
-	      "responseCode": "$response_code"
-	      ,
-	      "sizeDownload": $size_download
-	      ,
-	      "speedDownload": $speed_download
-	      ,
-	      "timeTotal": $time_total
+	$( curl2json -i 3 $3 $4 )
 	    }
 	    ,
 	    "CompressedResponse":
 	    {
-	      "curlExitCode": "$curl_exit_code_z"
-	      ,
-	      "responseCode": "$response_code_z"
-	      ,
-	      "sizeDownload": $size_download_z
-	      ,
-	      "speedDownload": $speed_download_z
-	      ,
-	      "timeTotal": $time_total_z
+	$( curl2json -i 3 $5 $6 )
 	    }
 	  }
 JSON_OBJECT
+}
+
+curl2json () {
+	# usage: curl2json CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
+
+	local curl_exit_code
+	
+	# curl write-out parameters
+	local response_code
+	local size_download
+	local speed_download
+	local time_namelookup
+	local time_connect
+	local time_appconnect
+	local time_pretransfer
+	local time_starttransfer
+	local time_total
+	
+	local i
+	local spaces
+	local status_code
+
+	local output_all=false
+	local indent_level=0
+	
+	local opt
+	local OPTARG
+	local OPTIND
+	
+	while getopts ":ai:" opt; do
+		case $opt in
+			a)
+				output_all=true
+				;;
+			i)
+				indent_level="$OPTARG"
+				;;
+			\?)
+				echo "ERROR: $FUNCNAME: Unrecognized option: -$OPTARG" >&2
+				return 2
+				;;
+			:)
+				echo "ERROR: $FUNCNAME: Option -$OPTARG requires an argument" >&2
+				return 2
+				;;
+		esac
+	done
+	
+	# check indentation level
+	if [ "$indent_level" -lt 0 ]; then
+		echo "ERROR: $FUNCNAME: indentation level (option -i) must be nonnegative: $indent_level" >&2
+		return 2
+	fi
+
+	# compute indentation
+	spaces=""
+	for (( i = 0 ; i < $indent_level ; i++ )); do
+		# two spaces per level of indentation
+		spaces="  $spaces"
+	done
+	
+	# check the number of command-line arguments
+	shift $(( OPTIND - 1 ))
+	if [ $# -ne 2 ]; then
+		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (2 required)" >&2
+		return 2
+	fi
+	curl_exit_code=$1
+	
+	# parse curl write-out string
+	eval "$2"
+	status_code=$?
+	if [ $status_code -ne 0 ]; then
+		print_log_message -E "$FUNCNAME eval failed ($status_code)"
+		return 3
+	fi
+	
+	if $output_all; then
+		/bin/cat <<- JSON_FIELDS_ALL
+		${spaces}"curlExitCode": "$curl_exit_code"
+		${spaces},
+		${spaces}"responseCode": "$response_code"
+		${spaces},
+		${spaces}"sizeDownload": $size_download
+		${spaces},
+		${spaces}"speedDownload": $speed_download
+		${spaces},
+		${spaces}"timeNamelookup": $time_namelookup
+		${spaces},
+		${spaces}"timeConnect": $time_connect
+		${spaces},
+		${spaces}"timeAppconnect": $time_appconnect
+		${spaces},
+		${spaces}"timePretransfer": $time_pretransfer
+		${spaces},
+		${spaces}"timeStarttransfer": $time_starttransfer
+		${spaces},
+		${spaces}"timeTotal": $time_total
+		JSON_FIELDS_ALL
+	else
+		/bin/cat <<- JSON_FIELDS_SOME
+		${spaces}"curlExitCode": "$curl_exit_code"
+		${spaces},
+		${spaces}"responseCode": "$response_code"
+		${spaces},
+		${spaces}"sizeDownload": $size_download
+		${spaces},
+		${spaces}"speedDownload": $speed_download
+		${spaces},
+		${spaces}"timeTotal": $time_total
+		JSON_FIELDS_SOME
+	fi
 }
