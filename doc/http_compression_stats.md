@@ -52,8 +52,6 @@ The `friendlyDate` field indicates the date of the request. The time of the init
 
 The tool compares the content of the two responses byte-by-byte. The `diffExitCode` field records the result of this comparison. The response bodies are identical if (and only if) the value of the `diffExitCode` field is zero.
 
-Note: The tool uses the `/usr/bin/cmp` command-line tool (not `/usr/bin/diff`) to compare content. The former is more versatile since it works on both text and binary resources.
-
 The rest of the JSON output consists of two JavaScript objects, one for the uncompressed response and the other for the compressed response (resp.). The two objects contain the same fields.
 
 The `curlExitCode` field is just that. Normally this code will be zero, indicating that curl was successful. Nonzero exit codes indicate an error occurred. The semantics of [curl exit codes](https://curl.haxx.se/docs/manpage.html#EXIT) are documented on the curl man page.
@@ -72,13 +70,23 @@ The `http_compression_stats.bash` script has one required command-line argument:
 
 Usage: `http_compression_stats.bash [-hqDW] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
 
-The `LOCATION` argument is the URL of interest. For example, a location may be specified as follows:
+The `LOCATION` argument is the URL of interest. First specify a location as follows:
 
 ```shell
 $ location=http://crl.tcs.terena.org/TERENASSLCA.crl
 ```
 
-Now invoke the script like this:
+Do a quick check on the resource using the following command:
+
+```shell
+$ /usr/bin/cmp -s <(/usr/bin/curl --silent $location) <(/usr/bin/curl --silent --compressed $location)
+$ echo $?
+0
+```
+
+The exit code of the `cmp` command indicates whether or not the two requests produce the same resource. In this case, the exit code is 0, which confirms the integrity of the compressed resource.
+
+Let's double-check this result by invoking the script like this:
 
 ```shell
 $ $BIN_DIR/http_compression_stats.bash $location
