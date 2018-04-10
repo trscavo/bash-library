@@ -1,8 +1,12 @@
-# Monitoring HTTP Compression
+# Monitoring a Compressed HTTP Resource
 
-This document shows how to use one of the bash tools (`http_compression_stats.bash`) to measure the effects of [HTTP compression](https://en.wikipedia.org/wiki/HTTP_compression). The tool is essentially a wrapper around the `curl` command-line tool, which supports compression out-of-the-box.
+This document shows how to use one of the bash tools (`http_compression_stats.bash`) to monitor an HTTP resource. The tool is essentially a wrapper around the `curl` command-line tool, which has extensive timing capabilities.
 
-The `http_compression_stats.bash` tool issues two requests for the same resource. One of the requests includes an `Accept-Encoding` header while the other does not. The responses are analyzed and the response info is persisted to a log file. The tool then converts a portion of the log file to JSON. Here is the simplest example of a JSON array with one element:
+This tool also checks the server’s ability to compress the resource and the integrity of the compressed response. It does this by making two separate requests for the resource, one that indicates the client’s support for HTTP compression and one that does not. The response times are recorded separately for each response.
+
+If the server does not support [HTTP compression](https://en.wikipedia.org/wiki/HTTP_compression) for the resource of interest, or you trust the server to maintain the integrity of the compressed response, consider using the [http_response_stats.bash](./http_response_stats.md) tool instead. The latter makes a single request for the resource (with or without compression, your choice).
+
+The `http_compression_stats.bash` tool persists the timing values for both requests to a log file. It then converts a portion of the log file to JSON. Here is the simplest example of a JSON array with one element:
 
 ```javascript
 [
