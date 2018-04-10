@@ -1,6 +1,8 @@
-# Monitoring HTTP Response
+# Monitoring an HTTP Resource
 
-This document shows how to use one of the bash tools (`http_response_stats.bash`) to measure response times from an HTTP server. The tool is essentially a wrapper around the `curl` command-line tool, which has extensive timing capabilities.
+This document shows how to use one of the bash tools (`http_response_stats.bash`) to monitor an HTTP resource. The tool is essentially a wrapper around the `curl` command-line tool, which has extensive timing capabilities.
+
+If the server supports [HTTP compression](https://en.wikipedia.org/wiki/HTTP_compression), and you wish to monitor the integrity of the compressed response, consider using the [http_compression_stats.bash](./http_compression_stats.md) tool instead. The latter makes two separate requests for the resource (with and without compression).
 
 The `http_response_stats.bash` tool computes and persists the response time values to a log file. It then converts a portion of the log file to JSON. Here is the simplest example of a JSON array with one element:
 

@@ -7,8 +7,8 @@ A library of re-usable bash scripts
 This Bash Library includes the following features:
 
 * implements an HTTP conditional request ([RFC 7232](https://tools.ietf.org/html/rfc7232)) client
-* monitors an HTTP resource that supports HTTP Compression
-* monitors an HTTP resource for responsiveness (see: [`http_response_stats.md`](doc/http_response_stats.md))
+* monitors an HTTP resource for responsiveness (see doc: [`http_response_stats.md`](doc/http_response_stats.md))
+* monitors a compressed HTTP resource for responsiveness and integrity (see doc: [`http_compression_stats.md`](doc/http_compression_stats.md))
 * includes a compatibility layer (Linux and Mac OS)
 * has a built-in logging facility
 * is cron-friendly
