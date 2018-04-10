@@ -44,7 +44,7 @@ The output data are sufficient to construct a time-series plot. The `requestInst
 
 The `http_response_stats.bash` script has one required command-line argument:
 
-Usage: `http_response_stats.bash [-hqDWz] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
+Usage: `http_response_stats.bash [-hqDWaz] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
 
 The `LOCATION` argument is the URL of interest. Specify a location as follows:
 
