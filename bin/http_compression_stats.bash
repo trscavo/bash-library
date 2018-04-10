@@ -44,6 +44,7 @@ display_help () {
 	   -D      Enable DEBUG level logging
 	   -W      Enable WARN level logging
 	   -n      Specify the number of JSON objects to output
+	   -a      Output all timing data per JSON object
 	   -d      Specify the directory to hold an output file
 
 	Option -h is mutually exclusive of all other options.
@@ -61,6 +62,12 @@ display_help () {
 	log file has fewer lines than the specified number of objects, the
 	script outputs as many objects as possible.
 	
+	By default, a JSON object includes a "timeTotal" field. To output
+	additional timing data per JSON object, use the -a option. This
+	will output all available timing data. Be careful, though, 
+	depending on the total number of JSON objects, this could bloat
+	the JSON file considerably.
+	
 	By default, the JSON array is output to stdout. Use the -d option
 	to specify a directory in which to write the JSON file. Typically 
 	the output directory is a web directory.
@@ -70,7 +77,7 @@ display_help () {
 	location argument appended with "_compression_stats.json". Thus 
 	each resource gives rise to a unique filename.
 	
-	Note: in Quiet Mode, both the -n and -d options are ignored.
+	Note: in Quiet Mode, the -a, -n, and -d options are ignored.
 	
 	COMPRESSION LOG FILE
 	
@@ -119,6 +126,11 @@ display_help () {
 	from the size_download and speed_download metrics.
 	
 	OUTPUT
+	
+	As discussed above, the number of JSON objects and the number
+	of fields per JSON object are controlled by options -n and -a,
+	respectively. For the sake of discussion, this section assumes
+	options '-n 1 -a' have been specified on the command line.
 	
 	Here is the simplest example of a JSON array with one element:
 	
