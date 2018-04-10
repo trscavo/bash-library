@@ -11,11 +11,11 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
 ```javascript
 [
   {
-    "requestInstant": "2018-04-09T14:59:28Z"
+    "requestInstant": "2018-04-10T15:52:38Z"
     ,
-    "friendlyDate": "April 09, 2018"
+    "friendlyDate": "April 10, 2018"
     ,
-    "diffExitCode": "1"
+    "diffExitCode": "0"
     ,
     "UncompressedResponse":
     {
@@ -23,11 +23,11 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
       ,
       "responseCode": "200"
       ,
-      "sizeDownload": 44442
+      "sizeDownload": 437
       ,
-      "speedDownload": 75162.000
+      "speedDownload": 1299.000
       ,
-      "timeTotal": 0.591277
+      "timeTotal": 0.336224
     }
     ,
     "CompressedResponse":
@@ -36,11 +36,11 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
       ,
       "responseCode": "200"
       ,
-      "sizeDownload": 13317
+      "sizeDownload": 439
       ,
-      "speedDownload": 24942.000
+      "speedDownload": 2883.000
       ,
-      "timeTotal": 0.533898
+      "timeTotal": 0.152244
     }
   }
 ]
