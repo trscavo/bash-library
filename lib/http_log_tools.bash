@@ -453,11 +453,39 @@ update_response_log () {
 }
 
 append_response_object () {
-	# usage: append_response_object DATE_TIME CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
+	# usage: append_response_object [-a] DATE_TIME CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
 	# request parameter
 	local requestInstant
+		
+	local out_opt
+		
+	local opt
+	local OPTARG
+	local OPTIND
 	
+	while getopts ":a" opt; do
+		case $opt in
+			a)
+				out_opt="-$opt"
+				;;
+			\?)
+				echo "ERROR: $FUNCNAME: Unrecognized option: -$OPTARG" >&2
+				return 2
+				;;
+			:)
+				echo "ERROR: $FUNCNAME: Option -$OPTARG requires an argument" >&2
+				return 2
+				;;
+		esac
+	done
+	
+	# check the number of command-line arguments
+	shift $(( OPTIND - 1 ))
+	if [ $# -ne 3 ]; then
+		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (3 required)" >&2
+		return 2
+	fi
 	requestInstant=$1
 	
 	/bin/cat <<- JSON_OBJECT
@@ -466,7 +494,7 @@ append_response_object () {
 	    ,
 	    "friendlyDate": "$( dateTime_canonical2friendlyDate $requestInstant )"
 	    ,
-	$( curl2json -a -i 2 $2 $3 )
+	$( curl2json $out_opt -i 2 $2 $3 )
 	  }
 JSON_OBJECT
 }
@@ -660,12 +688,40 @@ update_compression_log () {
 }
 
 append_compression_object () {
-	# usage: append_compression_object DATE_TIME DIFF_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
+	# usage: append_compression_object [-a] DATE_TIME DIFF_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
 	# request parameters
 	local requestInstant
 	local diff_exit_code
 		
+	local out_opt
+		
+	local opt
+	local OPTARG
+	local OPTIND
+	
+	while getopts ":a" opt; do
+		case $opt in
+			a)
+				out_opt="-$opt"
+				;;
+			\?)
+				echo "ERROR: $FUNCNAME: Unrecognized option: -$OPTARG" >&2
+				return 2
+				;;
+			:)
+				echo "ERROR: $FUNCNAME: Option -$OPTARG requires an argument" >&2
+				return 2
+				;;
+		esac
+	done
+	
+	# check the number of command-line arguments
+	shift $(( OPTIND - 1 ))
+	if [ $# -ne 6 ]; then
+		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (6 required)" >&2
+		return 2
+	fi
 	requestInstant=$1
 	diff_exit_code=$2
 	
@@ -679,12 +735,12 @@ append_compression_object () {
 	    ,
 	    "UncompressedResponse":
 	    {
-	$( curl2json -i 3 $3 $4 )
+	$( curl2json $out_opt -i 3 $3 $4 )
 	    }
 	    ,
 	    "CompressedResponse":
 	    {
-	$( curl2json -i 3 $5 $6 )
+	$( curl2json $out_opt -i 3 $5 $6 )
 	    }
 	  }
 JSON_OBJECT
