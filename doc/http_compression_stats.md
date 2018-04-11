@@ -58,9 +58,9 @@ The `curlExitCode` field is just that. Normally this code will be zero, indicati
 
 Note that the documentation for each exit code is individually addressable. For example, the online documentation for [exit code 28](https://curl.haxx.se/docs/manpage.html#28) indicates a network timeout.
 
-The `responseCode` field is the HTTP response code. Normally this is 200 but other responses are possible of course. If the `curlExitCode` is nonzero, and the HTTP response did not complete, the `responseCode` will be 000.
+The remaining fields are computed by curl. The values were obtained by invoking the `curl --write-out` option. The semantics of each [write-out parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page.
 
-The remaining fields are computed by curl. The values were obtained by invoking the `curl --write-out` option. The semantics of each [option parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page.
+In particular, the `responseCode` field is the HTTP response code. Normally this is 200 but other responses are possible of course. If the `curlExitCode` is nonzero, and the HTTP response did not complete, the `responseCode` will be 000.
 
 The output data are sufficient to construct a time-series plot. The `requestInstant` field is intended to be the independent variable. Any of the numerical `--write-out` parameters are potential dependent variables of interest. In particular, either  the `speedDownload` field or the `timeTotal` field gives rise to interesting time-series plots.
 
@@ -68,7 +68,7 @@ The output data are sufficient to construct a time-series plot. The `requestInst
 
 The `http_compression_stats.bash` script has one required command-line argument:
 
-Usage: `http_compression_stats.bash [-hqDW] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
+Usage: `http_compression_stats.bash [-hqDWa] [-n NUM_OBJECTS] [-d OUT_DIR] LOCATION`
 
 The `LOCATION` argument is the URL of interest. First specify a location as follows:
 
@@ -148,12 +148,79 @@ By default, the JSON array will have 10 elements. To specify some other array si
 $ $BIN_DIR/http_compression_stats.bash -n 1 $location
 ```
 
-Here's another example:
+Here's another, more realistic example:
 
 ```shell
 $ $BIN_DIR/http_compression_stats.bash -n 30 -d $out_dir $location
 ```
 
 The above command will output a JSON array of at most 30 elements. These elements correspond to the last 30 lines in the log file.
+
+Every JSON object (both compressed and uncompressed) includes a `timeTotal` field. To output additional timing data per JSON object, use the -a option, which outputs all available timing data. For example:
+
+```shell
+$ $BIN_DIR/http_compression_stats.bash -n 1 -a $location
+[
+  {
+    "requestInstant": "2018-04-10T23:13:41Z"
+    ,
+    "friendlyDate": "April 10, 2018"
+    ,
+    "diffExitCode": "0"
+    ,
+    "UncompressedResponse":
+    {
+      "curlExitCode": "0"
+      ,
+      "responseCode": "200"
+      ,
+      "sizeDownload": 437
+      ,
+      "speedDownload": 4009.000
+      ,
+      "timeNamelookup": 0.033307
+      ,
+      "timeConnect": 0.055921
+      ,
+      "timeAppconnect": 0.000000
+      ,
+      "timePretransfer": 0.056022
+      ,
+      "timeStarttransfer": 0.108300
+      ,
+      "timeTotal": 0.108986
+    }
+    ,
+    "CompressedResponse":
+    {
+      "curlExitCode": "0"
+      ,
+      "responseCode": "200"
+      ,
+      "sizeDownload": 439
+      ,
+      "speedDownload": 5620.000
+      ,
+      "timeNamelookup": 0.004517
+      ,
+      "timeConnect": 0.024798
+      ,
+      "timeAppconnect": 0.000000
+      ,
+      "timePretransfer": 0.024845
+      ,
+      "timeStarttransfer": 0.077468
+      ,
+      "timeTotal": 0.078103
+    }
+  }
+]
+```
+
+The timing values (each starting with the word “time” in the output) were obtained by invoking the `curl --write-out` option. The semantics of each [write-out parameter](https://curl.haxx.se/docs/manpage.html#-w) are documented on the curl man page. 
+
+The timing values are listed chronologically in the output. Each timing value gives the cumulative elapsed time in seconds. For example, the value of `timeConnect` (0.298768 secs) is the cumulative time for both DNS resolution (`timeNamelookup`) and TCP connection (`timeConnect`). The final time listed is the total time, given by the `timeTotal` value, which is always included in the output, even if option `-a` is omitted.
+
+Be careful, though, depending on the total number of JSON objects, the use of option `-a` could bloat the JSON file considerably.
 
 That’s it! To keep the JSON file up to date, you can of course automate the previous process with cron.
