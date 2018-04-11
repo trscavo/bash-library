@@ -85,8 +85,10 @@ display_help () {
 	text file consists of the following tab-delimited fields:
 	
 	  currentTime
-	  diffExitCode
+	  cmpExitCode
+	  uncompressedCurlExitCode
 	  uncompressedCurlResultString
+	  compressedCurlExitCode
 	  compressedCurlResultString
 	
 	The currentTime field contains a timestamp whose value format is 
@@ -96,17 +98,21 @@ display_help () {
 	
 	where 'T' and 'Z' are literals.
 	
-	The diffExitCode is the exit code of a diff applied to two HTTP
-	response bodies, one obtained uncompressed and the other obtained
-	compressed (or not) at the discretion of the HTTP server. If
-	the diff exit code is zero, the two responses contained the
-	same content. A nonzero exit code would suggest a misconfiguration
-	at the server.
+	The cmpExitCode is the exit code of the cmp command applied to 
+	two HTTP response bodies, one obtained uncompressed and the other 
+	obtained compressed (or not, at the discretion of the HTTP server). 
+	If the cmp exit code is zero, the two responses contained the same 
+	content. A nonzero exit code would suggest a misconfiguration at 
+	the server.
 	
-	The latter two fields encode the results of two invocations of 
-	the curl command-line tool, one uncompressed and the other
-	compressed (resp.). Each of the curl result strings encode the 
-	following values:
+	The next two fields encode the results of an uncompressed response,
+	that is, a response to a request that did not include an 
+	Accept-Encoding header. The uncompressedCurlExitCode field is the 
+	curl exit code. The semantics of curl exit codes are documented on 
+	the curl web site: https://curl.haxx.se/docs/manpage.html#EXIT
+	
+	The uncompressedCurlResultString field is a curl result string 
+	that encodes the following values:
 	
 	  response_code
 	  size_download
@@ -118,9 +124,14 @@ display_help () {
 	  time_starttransfer
 	  time_total
 	
-	See the curl documentation for details:
+	See the curl documentation for the meaning of each parameter
+	in the curl result string:
 	https://curl.haxx.se/docs/manpage.html#-w
 	
+	The last two fields encode the results of a compressed response,
+	that is, a response to a request that included an Accept-Encoding 
+	header. These fields are analogous to the previous two fields.
+
 	Note that a server may or may not compress a response, at its
 	discretion. If the response is compressed, this will be evident
 	from the size_download and speed_download metrics.
@@ -140,7 +151,7 @@ display_help () {
 	    ,
 	    "friendlyDate": "February 18, 2018"
 	    ,
-	    "diffExitCode": "0"
+	    "areResponsesEqual": true
 	    ,
 	    "UncompressedResponse":
 	    {
@@ -181,9 +192,8 @@ display_help () {
 	The friendlyDate field indicates the date of the request. The
 	time subfield is omitted from the friendlyDate.
 	
-	The diffExitCode indicates if the content of the uncompressed
-	and compressed responses is the same. The content is the same 
-	if (and only if) the value of diffExitCode is 0.
+	The areResponsesEqual boolean field indicates if the content of 
+	the uncompressed and compressed responses are the same.
 	
 	The UncompressedResponse and CompressedResponse objects contain
 	the same fields:
@@ -409,7 +419,7 @@ final_log_message="$script_name END"
 # 2. Update the corresponding response log file with the results
 # 3. Issue an HTTP GET request (with compression)
 # 4. Update the corresponding response log file with the results
-# 5. Compute the diff of the two resources
+# 5. Compare the two resources
 # 6. Update the compression log file with the overall results
 # 7. Print the tail of the compression log file in JSON format
 # 8. Print the tail of the (uncompressed) response log file in JSON format
@@ -488,13 +498,13 @@ fi
 
 #######################################################################
 #
-# Compute the diff of the two resources
+# Compare the two resources
 #
 #######################################################################
 
 /usr/bin/cmp -s "$web_file" "$web_file_z"
-diffExitCode=$?
-print_log_message -I "$script_name: diff exit code: $diffExitCode"
+cmpExitCode=$?
+print_log_message -I "$script_name: cmp exit code: $cmpExitCode"
 
 #######################################################################
 #
@@ -502,7 +512,7 @@ print_log_message -I "$script_name: diff exit code: $diffExitCode"
 #
 #######################################################################
 
-compression_log_file_path=$( update_compression_log -d "$CACHE_DIR" -T "$tmp_dir" $location $currentTime $diffExitCode )
+compression_log_file_path=$( update_compression_log -d "$CACHE_DIR" -T "$tmp_dir" $location $currentTime $cmpExitCode )
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name update_compression_log failed ($status_code) on location: $location"
