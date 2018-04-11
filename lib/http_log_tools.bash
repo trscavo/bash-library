@@ -284,7 +284,7 @@ append_timestamp_object () {
 	      "days": $( secs2days $validityIntervalSecs )
 	    }
 	  }
-JSON_OBJECT
+	JSON_OBJECT
 }
 
 #######################################################################
@@ -496,7 +496,7 @@ append_response_object () {
 	    ,
 	$( curl2json $out_opt -i 2 $2 $3 )
 	  }
-JSON_OBJECT
+	JSON_OBJECT
 }
 
 #######################################################################
@@ -554,7 +554,7 @@ update_compression_log () {
 	local tmp_dir
 	local location
 	local timestamp
-	local diff_exit_code
+	local cmp_exit_code
 	local curl_results_file
 	local num_lines
 	local uncompressed_results
@@ -617,7 +617,7 @@ update_compression_log () {
 	fi
 	location="$1"
 	timestamp="$2"
-	diff_exit_code="$3"
+	cmp_exit_code="$3"
 	
 	# check arguments
 	if [ -z "$location" ] ; then
@@ -628,13 +628,13 @@ update_compression_log () {
 		echo "ERROR: $FUNCNAME: empty TIMESTAMP argument" >&2
 		return 2
 	fi
-	if [ -z "$diff_exit_code" ]; then
+	if [ -z "$cmp_exit_code" ]; then
 		echo "ERROR: $FUNCNAME: empty EXIT_CODE argument" >&2
 		return 2
 	fi
 	print_log_message -D "$FUNCNAME using location $location"
 	print_log_message -D "$FUNCNAME using timestamp $timestamp"
-	print_log_message -D "$FUNCNAME using exit code $diff_exit_code"
+	print_log_message -D "$FUNCNAME using exit code $cmp_exit_code"
 	
 	# check curl results
 	curl_results_file="$tmp_dir/$( tmp_curl_results_filename )"
@@ -676,7 +676,7 @@ update_compression_log () {
 	fi
 
 	# append the curl results to the log file
-	echo -e "$timestamp $diff_exit_code $uncompressed_results $curl_exit_code $curl_result_string" \
+	echo -e "$timestamp $cmp_exit_code $uncompressed_results $curl_exit_code $curl_result_string" \
 		| /usr/bin/xargs printf "%s\t%s\t%s\t%s\t%s\t%s\n" >> "$cached_log_file"	
 	status_code=$?
 	if [ $status_code -ne 0 ]; then
@@ -688,11 +688,11 @@ update_compression_log () {
 }
 
 append_compression_object () {
-	# usage: append_compression_object [-a] DATE_TIME DIFF_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
+	# usage: append_compression_object [-a] DATE_TIME CMP_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
 	# request parameters
 	local requestInstant
-	local diff_exit_code
+	local cmp_exit_code
 		
 	local out_opt
 		
@@ -723,7 +723,7 @@ append_compression_object () {
 		return 2
 	fi
 	requestInstant=$1
-	diff_exit_code=$2
+	cmp_exit_code=$2
 	
 	/bin/cat <<- JSON_OBJECT
 	  {
@@ -731,7 +731,7 @@ append_compression_object () {
 	    ,
 	    "friendlyDate": "$( dateTime_canonical2friendlyDate $requestInstant )"
 	    ,
-	    "diffExitCode": "$diff_exit_code"
+	    "areResponsesEqual": $( [ "$cmp_exit_code" -eq 0 ] && echo 'true' || echo 'false' )
 	    ,
 	    "UncompressedResponse":
 	    {
@@ -743,7 +743,7 @@ append_compression_object () {
 	$( curl2json $out_opt -i 3 $5 $6 )
 	    }
 	  }
-JSON_OBJECT
+	JSON_OBJECT
 }
 
 curl2json () {
