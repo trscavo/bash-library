@@ -103,6 +103,7 @@ Every invocation of the script performs the following steps:
 1. Issue an HTTP GET request (with compression)
 1. Update the corresponding response log file with the results
 1. Compare the two resources
+1. Determine if the last response was actually compressed
 1. Update the compression log file with the overall results
 1. Print a tail of the compression log file in JSON format
 1. Print a tail of the (uncompressed) response log file in JSON format
