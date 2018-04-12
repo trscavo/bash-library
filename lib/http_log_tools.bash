@@ -530,7 +530,7 @@ compression_log_file () {
 #
 # This function updates a particular compression log file.
 #
-# Usage: update_compression_log -T TMP_DIR -d CACHE_DIR LOCATION TIMESTAMP EXIT_CODE
+# Usage: update_compression_log -T TMP_DIR -d CACHE_DIR LOCATION TIMESTAMP EXIT_CODE RESULT_CODE
 #
 # Dependencies:
 #   core_lib.bash
@@ -555,11 +555,11 @@ update_compression_log () {
 	local location
 	local timestamp
 	local cmp_exit_code
+	local result_code
 	local curl_results_file
 	local num_lines
 	local uncompressed_results
 	local compressed_results
-	local curl_result_string
 	local cached_log_file
 	
 	local status_code
@@ -611,13 +611,14 @@ update_compression_log () {
 
 	# determine the LOCATION
 	shift $(( OPTIND - 1 ))
-	if [ $# -ne 3 ]; then
-		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (3 required)" >&2
+	if [ $# -ne 4 ]; then
+		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (4 required)" >&2
 		return 2
 	fi
 	location="$1"
 	timestamp="$2"
 	cmp_exit_code="$3"
+	result_code="$4"
 	
 	# check arguments
 	if [ -z "$location" ] ; then
@@ -632,9 +633,14 @@ update_compression_log () {
 		echo "ERROR: $FUNCNAME: empty EXIT_CODE argument" >&2
 		return 2
 	fi
+	if [ -z "$result_code" ]; then
+		echo "ERROR: $FUNCNAME: empty RESULT_CODE argument" >&2
+		return 2
+	fi
 	print_log_message -D "$FUNCNAME using location $location"
 	print_log_message -D "$FUNCNAME using timestamp $timestamp"
 	print_log_message -D "$FUNCNAME using exit code $cmp_exit_code"
+	print_log_message -D "$FUNCNAME using result code $result_code"
 	
 	# check curl results
 	curl_results_file="$tmp_dir/$( tmp_curl_results_filename )"
@@ -665,7 +671,7 @@ update_compression_log () {
 		print_log_message -E "$FUNCNAME tail failed ($status_code)"
 		return 3
 	fi
-	read -r curl_exit_code curl_result_string <<< "$compressed_results"
+	#read -r curl_exit_code curl_result_string <<< "$compressed_results"
 	
 	# determine the log file
 	cached_log_file=$( compression_log_file -d "$cache_dir" $location )
@@ -676,23 +682,25 @@ update_compression_log () {
 	fi
 
 	# append the curl results to the log file
-	echo -e "$timestamp $cmp_exit_code $uncompressed_results $curl_exit_code $curl_result_string" \
-		| /usr/bin/xargs printf "%s\t%s\t%s\t%s\t%s\t%s\n" >> "$cached_log_file"	
+	echo -e "$timestamp $cmp_exit_code $result_code $uncompressed_results $compressed_results" \
+		| /usr/bin/xargs printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" >> "$cached_log_file"	
 	status_code=$?
 	if [ $status_code -ne 0 ]; then
 		print_log_message -E "$FUNCNAME failed ($status_code) to append to log file: $cached_log_file"
 		return 3
 	fi
 	
+	# side effect
 	echo "$cached_log_file"
 }
 
 append_compression_object () {
-	# usage: append_compression_object [-a] DATE_TIME CMP_EXIT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
+	# usage: append_compression_object [-a] DATE_TIME CMP_EXIT_CODE RESULT_CODE CURL_EXIT_CODE CURL_WRITE_PARAM_STRING CURL_EXIT_CODE CURL_WRITE_PARAM_STRING
 
 	# request parameters
 	local requestInstant
 	local cmp_exit_code
+	local result_code
 		
 	local out_opt
 		
@@ -718,12 +726,13 @@ append_compression_object () {
 	
 	# check the number of command-line arguments
 	shift $(( OPTIND - 1 ))
-	if [ $# -ne 6 ]; then
-		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (6 required)" >&2
+	if [ $# -ne 7 ]; then
+		echo "ERROR: $FUNCNAME: wrong number of arguments: $# (7 required)" >&2
 		return 2
 	fi
 	requestInstant=$1
 	cmp_exit_code=$2
+	result_code=$3
 	
 	/bin/cat <<- JSON_OBJECT
 	  {
@@ -733,14 +742,16 @@ append_compression_object () {
 	    ,
 	    "areResponsesEqual": $( [ "$cmp_exit_code" -eq 0 ] && echo 'true' || echo 'false' )
 	    ,
+	    "isResponseCompressed": $( [ "$result_code" -eq 0 ] && echo 'true' || echo 'false' )
+	    ,
 	    "UncompressedResponse":
 	    {
-	$( curl2json $out_opt -i 3 $3 $4 )
+	$( curl2json $out_opt -i 3 $4 $5 )
 	    }
 	    ,
 	    "CompressedResponse":
 	    {
-	$( curl2json $out_opt -i 3 $5 $6 )
+	$( curl2json $out_opt -i 3 $6 $7 )
 	    }
 	  }
 	JSON_OBJECT

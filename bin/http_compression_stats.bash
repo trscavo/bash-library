@@ -420,10 +420,11 @@ final_log_message="$script_name END"
 # 3. Issue an HTTP GET request (with compression)
 # 4. Update the corresponding response log file with the results
 # 5. Compare the two resources
-# 6. Update the compression log file with the overall results
-# 7. Print the tail of the compression log file in JSON format
-# 8. Print the tail of the (uncompressed) response log file in JSON format
-# 9. Print the tail of the (compressed) response log file in JSON format
+# 6. Determine if the last response was actually compressed
+# 7. Update the compression log file with the overall results
+# 8. Print the tail of the compression log file in JSON format
+# 9. Print the tail of the (uncompressed) response log file in JSON format
+# 10. Print the tail of the (compressed) response log file in JSON format
 #
 #######################################################################
 
@@ -508,11 +509,43 @@ print_log_message -I "$script_name: cmp exit code: $cmpExitCode"
 
 #######################################################################
 #
+# Determine if the last response was actually compressed
+#
+#######################################################################
+
+# get the path to the cached response header file
+cached_header_file="$( cache_response_headers_file -z -d "$CACHE_DIR" $location )"
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: cache_response_headers_file failed ($status_code) to compute cached_header_file"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+print_log_message -D "$script_name using cached header file: $cached_header_file"
+
+# check for a Content-Encoding header (which implies compression)
+header_value=$( get_header_value "$cached_header_file" Content-Encoding )
+status_code=$?
+if [ $status_code -ne 0 ]; then
+	print_log_message -E "$script_name: get_header_value failed ($status_code)"
+	clean_up_and_exit -d "$tmp_dir" -I "$final_log_message" 3
+fi
+
+# set the result code
+if [ -z "$header_value" ]; then
+	compressionResultCode=1
+else
+	compressionResultCode=0
+	print_log_message -D "$script_name: Content-Encoding header value: $header_value"
+fi
+print_log_message -I "$script_name: compression result code: $compressionResultCode"
+
+#######################################################################
+#
 # Update the compression log file with the overall results
 #
 #######################################################################
 
-compression_log_file_path=$( update_compression_log -d "$CACHE_DIR" -T "$tmp_dir" $location $currentTime $cmpExitCode )
+compression_log_file_path=$( update_compression_log -d "$CACHE_DIR" -T "$tmp_dir" $location $currentTime $cmpExitCode $compressionResultCode )
 status_code=$?
 if [ $status_code -ne 0 ]; then
 	print_log_message -E "$script_name update_compression_log failed ($status_code) on location: $location"
