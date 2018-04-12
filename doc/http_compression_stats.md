@@ -17,6 +17,8 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
     ,
     "areResponsesEqual": true
     ,
+    "isResponseCompressed": true
+    ,
     "UncompressedResponse":
     {
       "curlExitCode": "0"
@@ -50,7 +52,9 @@ In the JSON output, the value of the `requestInstant` field indicates the actual
 
 The `friendlyDate` field indicates the date of the request. The time of the initial request is omitted from the `friendlyDate` field for readability.
 
-The tool compares the content of the two responses byte-by-byte. The `areResponsesEqual` field records the result of this comparison. The response bodies are identical if (and only if) the value of the `areResponsesEqual` field is true.
+The tool compares the content of the two responses byte-by-byte. The result of this comparison is recorded in the `areResponsesEqual` boolean field: The response bodies are identical if (and only if) the value of the `areResponsesEqual` field is true.
+
+Since a server compresses a particular response at its discretion, the tool determines if the request with compression actually resulted in a compressed response. If so, the value of the `isResponseCompressed` boolean field will be true.
 
 The rest of the JSON output consists of two JavaScript objects, one for the uncompressed response and the other for the compressed response (resp.). The two objects contain the same fields.
 
@@ -167,6 +171,8 @@ $ $BIN_DIR/http_compression_stats.bash -n 1 -a $location
     "friendlyDate": "April 10, 2018"
     ,
     "areResponsesEqual": true
+    ,
+    "isResponseCompressed": true
     ,
     "UncompressedResponse":
     {
