@@ -86,6 +86,7 @@ display_help () {
 	
 	  currentTime
 	  cmpExitCode
+	  compressionResultCode
 	  uncompressedCurlExitCode
 	  uncompressedCurlResultString
 	  compressedCurlExitCode
@@ -104,6 +105,10 @@ display_help () {
 	If the cmp exit code is zero, the two responses contained the same 
 	content. A nonzero exit code would suggest a misconfiguration at 
 	the server.
+	
+	A server compresses a particular response at its discretion. The 
+	compressionResultCode will be zero if (and only if) the request
+	with compression actually resulted in a compressed response.
 	
 	The next two fields encode the results of an uncompressed response,
 	that is, a response to a request that did not include an 
@@ -132,10 +137,6 @@ display_help () {
 	that is, a response to a request that included an Accept-Encoding 
 	header. These fields are analogous to the previous two fields.
 
-	Note that a server may or may not compress a response, at its
-	discretion. If the response is compressed, this will be evident
-	from the size_download and speed_download metrics.
-	
 	OUTPUT
 	
 	As discussed above, the number of JSON objects and the number
@@ -147,37 +148,59 @@ display_help () {
 	
 	[
 	  {
-	    "requestInstant": "2018-02-18T16:52:40Z"
-	    ,
-	    "friendlyDate": "February 18, 2018"
-	    ,
-	    "areResponsesEqual": true
-	    ,
-	    "UncompressedResponse":
-	    {
-	      "curlExitCode": "0"
-	      ,
-	      "responseCode": "200"
-	      ,
-	      "sizeDownload": 50184424
-	      ,
-	      "speedDownload": 1763420.000
-	      ,
-	      "timeTotal": 28.458575
-	    }
-	    ,
-	    "CompressedResponse":
-	    {
-	      "curlExitCode": "0"
-	      ,
-	      "responseCode": "200"
-	      ,
-	      "sizeDownload": 9231008
-	      ,
-	      "speedDownload": 2246705.000
-	      ,
-	      "timeTotal": 4.108686
-	    }
+		"requestInstant": "2018-04-12T14:55:53Z"
+		,
+		"friendlyDate": "April 12, 2018"
+		,
+		"areResponsesEqual": true
+		,
+		"isResponseCompressed": true
+		,
+		"UncompressedResponse":
+		{
+		  "curlExitCode": "0"
+		  ,
+		  "responseCode": "200"
+		  ,
+		  "sizeDownload": 50245777
+		  ,
+		  "speedDownload": 13692118.000
+		  ,
+		  "timeNamelookup": 0.005264
+		  ,
+		  "timeConnect": 0.032230
+		  ,
+		  "timeAppconnect": 0.000000
+		  ,
+		  "timePretransfer": 0.032291
+		  ,
+		  "timeStarttransfer": 0.060468
+		  ,
+		  "timeTotal": 3.669686
+		}
+		,
+		"CompressedResponse":
+		{
+		  "curlExitCode": "0"
+		  ,
+		  "responseCode": "200"
+		  ,
+		  "sizeDownload": 9196871
+		  ,
+		  "speedDownload": 9401946.000
+		  ,
+		  "timeNamelookup": 0.004958
+		  ,
+		  "timeConnect": 0.031367
+		  ,
+		  "timeAppconnect": 0.000000
+		  ,
+		  "timePretransfer": 0.031489
+		  ,
+		  "timeStarttransfer": 0.058207
+		  ,
+		  "timeTotal": 0.978188
+		}
 	  }
 	]
 
@@ -194,6 +217,9 @@ display_help () {
 	
 	The areResponsesEqual boolean field indicates if the content of 
 	the uncompressed and compressed responses are the same.
+	
+	The isResponseCompressed boolean field indicates if the request
+	with compression actually resulted in a compressed response.
 	
 	The UncompressedResponse and CompressedResponse objects contain
 	the same fields:
