@@ -15,7 +15,7 @@ The `http_compression_stats.bash` tool persists the timing values for both reque
     ,
     "friendlyDate": "April 10, 2018"
     ,
-    "diffExitCode": "0"
+    "areResponsesEqual": true
     ,
     "UncompressedResponse":
     {
@@ -50,7 +50,7 @@ In the JSON output, the value of the `requestInstant` field indicates the actual
 
 The `friendlyDate` field indicates the date of the request. The time of the initial request is omitted from the `friendlyDate` field for readability.
 
-The tool compares the content of the two responses byte-by-byte. The `diffExitCode` field records the result of this comparison. The response bodies are identical if (and only if) the value of the `diffExitCode` field is zero.
+The tool compares the content of the two responses byte-by-byte. The `areResponsesEqual` field records the result of this comparison. The response bodies are identical if (and only if) the value of the `areResponsesEqual` field is true.
 
 The rest of the JSON output consists of two JavaScript objects, one for the uncompressed response and the other for the compressed response (resp.). The two objects contain the same fields.
 
@@ -98,7 +98,7 @@ Every invocation of the script performs the following steps:
 1. Update the corresponding response log file with the results
 1. Issue an HTTP GET request (with compression)
 1. Update the corresponding response log file with the results
-1. Compute the diff of the two resources
+1. Compare the two resources
 1. Update the compression log file with the overall results
 1. Print a tail of the compression log file in JSON format
 1. Print a tail of the (uncompressed) response log file in JSON format
@@ -166,7 +166,7 @@ $ $BIN_DIR/http_compression_stats.bash -n 1 -a $location
     ,
     "friendlyDate": "April 10, 2018"
     ,
-    "diffExitCode": "0"
+    "areResponsesEqual": true
     ,
     "UncompressedResponse":
     {
