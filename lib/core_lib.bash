@@ -54,6 +54,7 @@ _OPENSSL=/usr/bin/openssl
 _PRINTF=/usr/bin/printf  # also a bash builtin
 _RM=/bin/rm
 _RMDIR=/bin/rmdir
+_RSYNC=/usr/bin/rsync
 _TAIL=/usr/bin/tail
 _TEE=/usr/bin/tee
 _TR=/usr/bin/tr
