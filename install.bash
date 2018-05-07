@@ -94,6 +94,7 @@ while read -r script_file; do
 done <<SCRIPTS
 $script_bin/bin/cget.bash
 $script_bin/bin/chead.bash
+$script_bin/bin/http_cache_cat.bash
 $script_bin/bin/http_cache_check.bash
 $script_bin/bin/http_cache_diff.bash
 $script_bin/bin/http_cache_file.bash
