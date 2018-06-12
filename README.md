@@ -6,14 +6,14 @@ A library of re-usable bash scripts
 
 This Bash Library includes the following features:
 
-* implements an HTTP conditional request ([RFC 7232](https://tools.ietf.org/html/rfc7232)) client
-* monitors an HTTP resource for responsiveness (see doc: [`http_response_stats.md`](doc/http_response_stats.md))
+* implements a client that issues HTTP conditional requests ([RFC 7232](https://tools.ietf.org/html/rfc7232))
+* monitors an arbitrary HTTP resource for responsiveness (see doc: [`http_response_stats.md`](doc/http_response_stats.md))
 * monitors a compressed HTTP resource for responsiveness and integrity (see doc: [`http_compression_stats.md`](doc/http_compression_stats.md))
 * includes a compatibility layer (Linux and Mac OS)
 * has a built-in logging facility
 * is cron-friendly
 
-For detailed information about one of the tools, consult the tool's online help. For example, type:
+For detailed information about one of the tools, consult the tool's online help. For example, after installing the library, type:
 
 ```Shell
 $ $BIN_DIR/cget.bash -h
